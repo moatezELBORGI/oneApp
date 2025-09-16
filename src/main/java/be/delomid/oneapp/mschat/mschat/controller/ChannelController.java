@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/channels")
+@RequestMapping("/api/v1/channels")
 @RequiredArgsConstructor
 public class ChannelController {
 
