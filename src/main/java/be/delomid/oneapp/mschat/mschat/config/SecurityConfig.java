@@ -33,6 +33,34 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AppConfig appConfig;
 
+    @Order(1)
+    @Bean
+    public SecurityFilterChain swaggerSecurityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .securityMatcher("/api/v1/swagger-ui/**", "/api/v1/v3/api-docs/**",
+                        "/api/v1/swagger-resources/**", "/api/v1/webjars/**",
+                        "/swagger-ui/**", "/v3/api-docs/**",
+                        "/swagger-resources/**", "/webjars/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/v1/swagger-ui.html",
+                                "/api/v1/swagger-ui/**",
+                                "/api/v1/v3/api-docs/**",
+                                "/api/v1/swagger-resources/**",
+                                "/api/v1/webjars/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .build();
+    }
+    @Order(2)
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -43,8 +71,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/ws/**").permitAll() // WebSocket handled by custom interceptor
                         .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/channels/public/**").permitAll()
+                         .requestMatchers("/channels/public/**").permitAll()
                         .requestMatchers("/admin/**").hasAnyRole("BUILDING_ADMIN", "GROUP_ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/buildings/**", "/apartments/**", "/residents/**").hasAnyRole("RESIDENT", "BUILDING_ADMIN", "GROUP_ADMIN", "SUPER_ADMIN")
                         .anyRequest().authenticated()

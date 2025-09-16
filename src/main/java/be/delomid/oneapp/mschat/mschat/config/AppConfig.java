@@ -12,7 +12,6 @@ public class AppConfig {
     private String name;
     private String version;
     private String description;
-
     private Otp otp = new Otp();
     private Admin admin = new Admin();
     private Security security = new Security();
@@ -32,7 +31,6 @@ public class AppConfig {
     @Data
     public static class Security {
         private Cors cors = new Cors();
-
         @Data
         public static class Cors {
             private String[] allowedOrigins;

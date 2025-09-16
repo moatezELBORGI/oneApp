@@ -1,6 +1,8 @@
 package be.delomid.oneapp.mschat.mschat.repository;
 
+ import be.delomid.oneapp.mschat.mschat.model.AccountStatus;
  import be.delomid.oneapp.mschat.mschat.model.Resident;
+ import be.delomid.oneapp.mschat.mschat.model.UserRole;
  import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -33,7 +35,7 @@ public interface ResidentRepository extends JpaRepository<Resident, String> {
     List<Resident> findBuildingAdmins(@Param("role") UserRole role, @Param("buildingId") String buildingId);
     
     @Query("SELECT r FROM Resident r WHERE r.role = :role AND r.managedBuildingGroupId = :buildingGroupId")
-    List<Resident> findBuildingGroupAdmins(@Param("role") UserRole role, @Param("buildingGroupId") String buildingGroupId);
+    List<Resident> findBuildingGroupAdmins(@Param("role") UserRole  role, @Param("buildingGroupId") String buildingGroupId);
     
     @Query("SELECT r FROM Resident r WHERE r.accountStatus = :status")
     Page<Resident> findByAccountStatus(@Param("status") AccountStatus status, Pageable pageable);
