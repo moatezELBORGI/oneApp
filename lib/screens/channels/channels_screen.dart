@@ -58,7 +58,6 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
         ),
         actions: [
           IconButton(
-            heroTag: "channels_add",
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
