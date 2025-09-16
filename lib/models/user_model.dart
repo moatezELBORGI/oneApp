@@ -27,8 +27,10 @@ class User {
   String get initials => '${fname[0]}${lname[0]}'.toUpperCase();
 
   factory User.fromJson(Map<String, dynamic> json) {
+    final userId = json['userId'] ?? json['idUsers'] ?? '';
+    print('DEBUG: Creating user with ID: $userId from JSON: $json'); // Debug log
     return User(
-      id: json['userId'] ?? json['idUsers'] ?? '',
+      id: userId,
       fname: json['fname'] ?? '',
       lname: json['lname'] ?? '',
       email: json['email'] ?? '',

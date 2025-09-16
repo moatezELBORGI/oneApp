@@ -51,6 +51,14 @@ class ChatProvider with ChangeNotifier {
           .map((json) => Message.fromJson(json))
           .toList();
 
+      // Debug log pour vérifier les messages chargés
+      final currentUser = StorageService.getUser();
+      final currentUserId = currentUser?.id ?? 'unknown';
+      print('DEBUG: Loaded ${messages.length} messages for channel $channelId');
+      print('DEBUG: Current user ID: $currentUserId');
+      if (messages.isNotEmpty) {
+        print('DEBUG: First message from: ${messages.first.senderId}');
+      }
       if (refresh) {
         _channelMessages[channelId] = messages;
       } else {
@@ -75,6 +83,7 @@ class ChatProvider with ChangeNotifier {
     // Récupérer l'ID de l'utilisateur actuel
     final currentUser = StorageService.getUser();
     final currentUserId = currentUser?.id ?? 'unknown';
+    print('DEBUG: Sending message from user ID: $currentUserId'); // Debug log
     
     try {
       // Créer un message temporaire pour l'affichage immédiat
@@ -178,6 +187,7 @@ class ChatProvider with ChangeNotifier {
   void _handleNewMessage(Message message) {
     final currentUser = StorageService.getUser();
     final currentUserId = currentUser?.id ?? 'unknown';
+    print('DEBUG: Received message from: ${message.senderId}, current user: $currentUserId'); // Debug log
     
     final channelMessages = _channelMessages[message.channelId] ?? [];
     
@@ -192,9 +202,11 @@ class ChatProvider with ChangeNotifier {
     if (tempMessageIndex != -1) {
       // Remplacer le message temporaire par le message réel
       channelMessages[tempMessageIndex] = message;
+      print('DEBUG: Replaced temporary message'); // Debug log
     } else if (!channelMessages.any((m) => m.id == message.id)) {
       // Ajouter le nouveau message s'il n'existe pas déjà
       channelMessages.insert(0, message);
+      print('DEBUG: Added new message'); // Debug log
     }
     
     _channelMessages[message.channelId] = channelMessages;

@@ -220,10 +220,17 @@ class _ChatScreenState extends State<ChatScreen> {
                     
                     final messageIndex = typingUsers.isNotEmpty ? index - 1 : index;
                     final message = messages[messageIndex];
+                    final currentUserId = Provider.of<AuthProvider>(context, listen: false).user?.id;
+                    final isMe = message.senderId == currentUserId;
+                    
+                    // Debug log pour vérifier l'identification
+                    if (messageIndex < 3) { // Log seulement les 3 premiers messages pour éviter le spam
+                      print('DEBUG: Message from ${message.senderId}, current user: $currentUserId, isMe: $isMe');
+                    }
                     
                     return MessageBubble(
                       message: message,
-                      isMe: message.senderId == Provider.of<AuthProvider>(context, listen: false).user?.id,
+                      isMe: isMe,
                     );
                   },
                 );

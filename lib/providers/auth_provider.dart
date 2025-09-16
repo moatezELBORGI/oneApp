@@ -116,6 +116,7 @@ class AuthProvider with ChangeNotifier {
 
     _user = User.fromJson(response);
     _currentUserId = _user!.id;
+    print('DEBUG: User logged in with ID: ${_user!.id}'); // Debug log
     await StorageService.saveUser(_user!);
     
     await _connectWebSocket();
