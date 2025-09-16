@@ -71,7 +71,11 @@ class _ChatScreenState extends State<ChatScreen> {
    setState(() {
      _hasText = false;
    });
-    _scrollToBottom();
+    
+    // Scroll to bottom après un petit délai pour laisser le temps au message d'être ajouté
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _scrollToBottom();
+    });
   }
 
   void _scrollToBottom() {

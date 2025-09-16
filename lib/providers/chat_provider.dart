@@ -3,6 +3,7 @@ import '../models/message_model.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
 import '../services/websocket_service.dart';
+import '../services/storage_service.dart';
 
 class ChatProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -71,7 +72,30 @@ class ChatProvider with ChangeNotifier {
   }
 
   Future<void> sendMessage(int channelId, String content, String type, {int? replyToId}) async {
+    // Récupérer l'ID de l'utilisateur actuel
+    final currentUser = StorageService.getUser();
+    final currentUserId = currentUser?.id ?? 'unknown';
+    
     try {
+      // Créer un message temporaire pour l'affichage immédiat
+      final tempMessage = Message(
+        id: DateTime.now().millisecondsSinceEpoch, // ID temporaire
+        channelId: channelId,
+        senderId: currentUserId,
+        content: content,
+        type: type,
+        replyToId: replyToId,
+        isEdited: false,
+        isDeleted: false,
+        createdAt: DateTime.now(),
+      );
+      
+      // Ajouter immédiatement le message à la liste locale
+      final channelMessages = _channelMessages[channelId] ?? [];
+      channelMessages.insert(0, tempMessage);
+      _channelMessages[channelId] = channelMessages;
+      notifyListeners();
+      
       // Send via WebSocket for real-time delivery
       _wsService.sendMessage(channelId, content, type, replyToId: replyToId);
       
@@ -152,14 +176,29 @@ class ChatProvider with ChangeNotifier {
   }
 
   void _handleNewMessage(Message message) {
+    final currentUser = StorageService.getUser();
+    final currentUserId = currentUser?.id ?? 'unknown';
+    
     final channelMessages = _channelMessages[message.channelId] ?? [];
     
-    // Check if message already exists (avoid duplicates)
-    if (!channelMessages.any((m) => m.id == message.id)) {
+    // Remplacer le message temporaire s'il existe, sinon ajouter le nouveau
+    final tempMessageIndex = channelMessages.indexWhere((m) => 
+        m.content == message.content && 
+        m.senderId == currentUserId &&
+        message.senderId == currentUserId &&
+        m.createdAt.difference(message.createdAt).abs().inSeconds < 5
+    );
+    
+    if (tempMessageIndex != -1) {
+      // Remplacer le message temporaire par le message réel
+      channelMessages[tempMessageIndex] = message;
+    } else if (!channelMessages.any((m) => m.id == message.id)) {
+      // Ajouter le nouveau message s'il n'existe pas déjà
       channelMessages.insert(0, message);
-      _channelMessages[message.channelId] = channelMessages;
-      notifyListeners();
     }
+    
+    _channelMessages[message.channelId] = channelMessages;
+    notifyListeners();
   }
 
   void _handleTypingIndicator(String userId, String channelId, bool isTyping) {

@@ -11,11 +11,13 @@ class AuthProvider with ChangeNotifier {
   User? _user;
   bool _isLoading = false;
   String? _error;
+  String? _currentUserId;
 
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _user != null;
+  String? get currentUserId => _currentUserId;
 
   AuthProvider() {
     _loadUserFromStorage();
@@ -23,6 +25,7 @@ class AuthProvider with ChangeNotifier {
 
   void _loadUserFromStorage() {
     _user = StorageService.getUser();
+    _currentUserId = _user?.id;
     if (_user != null) {
       _connectWebSocket();
     }
@@ -112,6 +115,7 @@ class AuthProvider with ChangeNotifier {
     }
 
     _user = User.fromJson(response);
+    _currentUserId = _user!.id;
     await StorageService.saveUser(_user!);
     
     await _connectWebSocket();
