@@ -107,7 +107,7 @@ class ChatProvider with ChangeNotifier {
       notifyListeners();
       
       // Send via WebSocket for real-time delivery
-      _wsService.sendMessage(channelId, content, type, replyToId: replyToId);
+      _wsService.sendMessage(channelId, content ?? '', type, replyToId: replyToId);
       
       // Also send via REST API as backup
       await _apiService.sendMessage({
