@@ -95,14 +95,7 @@ class ChannelProvider with ChangeNotifier {
       final response = await _apiService.getBuildingResidents(buildingId);
       print('DEBUG: API response: $response');
       // L'API retourne directement une liste, pas un objet avec 'content'
-      List<dynamic> residentsList;
-      if (response is List) {
-        residentsList = response;
-      } else if (response is Map && response.containsKey('content')) {
-        residentsList = response['content'] as List;
-      } else {
-        throw Exception('Format de réponse API inattendu');
-      }
+      List<dynamic> residentsList = response as List<dynamic>;
       
       _buildingResidents = residentsList
           .map((json) => User.fromJson(json))
