@@ -2,6 +2,8 @@ package be.delomid.oneapp.mschat.mschat.service;
 
 import be.delomid.oneapp.mschat.mschat.config.AppConfig;
 import be.delomid.oneapp.mschat.mschat.model.*;
+import be.delomid.oneapp.mschat.mschat.repository.ApartmentRepository;
+import be.delomid.oneapp.mschat.mschat.repository.BuildingRepository;
 import be.delomid.oneapp.mschat.mschat.repository.CountryRepository;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +25,8 @@ public class DataInitializationService implements CommandLineRunner {
 
     private final CountryRepository countryRepository;
     private final ResidentRepository residentRepository;
+    private final BuildingRepository buildingRepository;
+    private final ApartmentRepository apartmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final AppConfig appConfig;
 
@@ -32,6 +37,7 @@ public class DataInitializationService implements CommandLineRunner {
 
         initializeCountries();
         initializeSuperAdmin();
+        initializeTestData();
 
         log.info("Application data initialization completed");
     }
@@ -80,6 +86,112 @@ public class DataInitializationService implements CommandLineRunner {
 
             residentRepository.save(superAdmin);
             log.info("Super admin created with email: {}", adminEmail);
+        }
+    }
+
+    private void initializeTestData() {
+        // Créer un immeuble de test
+        if (buildingRepository.count() == 0) {
+            log.info("Creating test building and residents...");
+            
+            Country france = countryRepository.findByCodeIso3("FRA");
+            if (france == null) {
+                france = countryRepository.findAll().get(0); // Prendre le premier pays disponible
+            }
+
+            // Créer une adresse de test
+            Address testAddress = Address.builder()
+                    .address("123 Rue de la Paix")
+                    .codePostal("75001")
+                    .ville("Paris")
+                    .pays(france)
+                    .build();
+
+            // Créer un immeuble de test
+            Building testBuilding = Building.builder()
+                    .buildingId("FRA-2024-TEST")
+                    .buildingLabel("Résidence Test")
+                    .buildingNumber("123")
+                    .yearOfConstruction(2020)
+                    .address(testAddress)
+                    .build();
+
+            testBuilding = buildingRepository.save(testBuilding);
+
+            // Créer des appartements de test
+            Apartment apartment1 = Apartment.builder()
+                    .idApartment("FRA-2024-TEST-A101")
+                    .apartmentLabel("Appartement 101")
+                    .apartmentNumber("101")
+                    .apartmentFloor(1)
+                    .livingAreaSurface(new BigDecimal("65.5"))
+                    .numberOfRooms(3)
+                    .numberOfBedrooms(2)
+                    .haveBalconyOrTerrace(true)
+                    .isFurnished(false)
+                    .building(testBuilding)
+                    .build();
+
+            Apartment apartment2 = Apartment.builder()
+                    .idApartment("FRA-2024-TEST-A102")
+                    .apartmentLabel("Appartement 102")
+                    .apartmentNumber("102")
+                    .apartmentFloor(1)
+                    .livingAreaSurface(new BigDecimal("58.0"))
+                    .numberOfRooms(2)
+                    .numberOfBedrooms(1)
+                    .haveBalconyOrTerrace(false)
+                    .isFurnished(true)
+                    .building(testBuilding)
+                    .build();
+
+            apartment1 = apartmentRepository.save(apartment1);
+            apartment2 = apartmentRepository.save(apartment2);
+
+            // Créer des résidents de test
+            Resident resident1 = Resident.builder()
+                    .idUsers(UUID.randomUUID().toString())
+                    .fname("Alice")
+                    .lname("Martin")
+                    .email("alice.martin@test.com")
+                    .password(passwordEncoder.encode("password123"))
+                    .phoneNumber("+33123456789")
+                    .role(UserRole.RESIDENT)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .isEnabled(true)
+                    .isAccountNonExpired(true)
+                    .isAccountNonLocked(true)
+                    .isCredentialsNonExpired(true)
+                    .build();
+
+            Resident resident2 = Resident.builder()
+                    .idUsers(UUID.randomUUID().toString())
+                    .fname("Bob")
+                    .lname("Dupont")
+                    .email("bob.dupont@test.com")
+                    .password(passwordEncoder.encode("password123"))
+                    .phoneNumber("+33987654321")
+                    .role(UserRole.RESIDENT)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .isEnabled(true)
+                    .isAccountNonExpired(true)
+                    .isAccountNonLocked(true)
+            resident1 = residentRepository.save(resident1);
+            resident2 = residentRepository.save(resident2);
+                    .isCredentialsNonExpired(true)
+            // Assigner les résidents aux appartements
+            apartment1.setResident(resident1);
+            apartment2.setResident(resident2);
+            apartmentRepository.save(apartment1);
+            apartmentRepository.save(apartment2);
+                    .build();
+            log.info("Test data created:");
+            log.info("- Building: {} (ID: {})", testBuilding.getBuildingLabel(), testBuilding.getBuildingId());
+            log.info("- Resident 1: {} {} - Email: {} - Apartment: {}", 
+                    resident1.getFname(), resident1.getLname(), resident1.getEmail(), apartment1.getApartmentNumber());
+            log.info("- Resident 2: {} {} - Email: {} - Apartment: {}", 
+                    resident2.getFname(), resident2.getLname(), resident2.getEmail(), apartment2.getApartmentNumber());
+            log.info("Password for both test residents: password123");
         }
     }
 }
