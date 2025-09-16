@@ -28,6 +28,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final _focusNode = FocusNode();
   bool _isRecording = false;
   bool _isTyping = false;
+ bool _hasText = false;
 
   @override
   void initState() {
@@ -46,11 +47,18 @@ class _ChatScreenState extends State<ChatScreen> {
   void _onTypingChanged() {
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     final isCurrentlyTyping = _messageController.text.isNotEmpty;
+   final hasText = _messageController.text.trim().isNotEmpty;
     
     if (isCurrentlyTyping != _isTyping) {
       _isTyping = isCurrentlyTyping;
       chatProvider.sendTypingIndicator(widget.channel.id, _isTyping);
     }
+   
+   if (hasText != _hasText) {
+     setState(() {
+       _hasText = hasText;
+     });
+   }
   }
 
   void _sendMessage({String? content, String type = Constants.messageTypeText}) {
@@ -60,6 +68,9 @@ class _ChatScreenState extends State<ChatScreen> {
     chatProvider.sendMessage(widget.channel.id, content.trim(), type);
     
     _messageController.clear();
+   setState(() {
+     _hasText = false;
+   });
     _scrollToBottom();
   }
 
@@ -267,8 +278,13 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                   onSubmitted: (text) {
-                    _sendMessage(content: text);
+                   if (text.trim().isNotEmpty) {
+                     _sendMessage(content: text);
+                   }
                   },
+                 onChanged: (text) {
+                   // Le listener _onTypingChanged se charge déjà de la logique
+                 },
                 ),
               ),
             ),
@@ -278,33 +294,46 @@ class _ChatScreenState extends State<ChatScreen> {
             // Send/Record Button
             Consumer<ChatProvider>(
               builder: (context, chatProvider, child) {
-                return GestureDetector(
-                  onTap: _messageController.text.trim().isNotEmpty
-                      ? () => _sendMessage(content: _messageController.text)
-                      : null,
-                  onLongPress: _messageController.text.trim().isEmpty
-                      ? _startRecording
-                      : null,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: _messageController.text.trim().isNotEmpty || _isRecording
-                          ? AppTheme.primaryColor
-                          : Colors.grey[400],
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Icon(
-                      _isRecording
-                          ? Icons.stop
-                          : _messageController.text.trim().isNotEmpty
-                              ? Icons.send
-                              : Icons.mic,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                );
+               return AnimatedSwitcher(
+                 duration: const Duration(milliseconds: 200),
+                 child: _hasText
+                     ? GestureDetector(
+                         key: const ValueKey('send'),
+                         onTap: () => _sendMessage(content: _messageController.text),
+                         child: Container(
+                           width: 48,
+                           height: 48,
+                           decoration: BoxDecoration(
+                             color: AppTheme.primaryColor,
+                             borderRadius: BorderRadius.circular(24),
+                           ),
+                           child: const Icon(
+                             Icons.send,
+                             color: Colors.white,
+                             size: 20,
+                           ),
+                         ),
+                       )
+                     : GestureDetector(
+                         key: const ValueKey('mic'),
+                         onLongPress: _startRecording,
+                         child: Container(
+                           width: 48,
+                           height: 48,
+                           decoration: BoxDecoration(
+                             color: _isRecording 
+                                 ? AppTheme.errorColor 
+                                 : Colors.grey[400],
+                             borderRadius: BorderRadius.circular(24),
+                           ),
+                           child: Icon(
+                             _isRecording ? Icons.stop : Icons.mic,
+                             color: Colors.white,
+                             size: 20,
+                           ),
+                         ),
+                       ),
+               );
               },
             ),
           ],
