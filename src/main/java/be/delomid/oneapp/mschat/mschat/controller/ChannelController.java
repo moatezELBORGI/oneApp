@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/v1/channels")
+@RequestMapping("/channels")
 @RequiredArgsConstructor
 public class ChannelController {
 

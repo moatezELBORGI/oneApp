@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/v1/residents")
+@RequestMapping("/residents")
 @RequiredArgsConstructor
 public class ResidentController {
 
