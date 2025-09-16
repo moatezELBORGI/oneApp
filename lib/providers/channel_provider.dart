@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/channel_model.dart';
 import '../models/user_model.dart';
+import '../models/message_model.dart';
 import '../services/api_service.dart';
 
 class ChannelProvider with ChangeNotifier {
