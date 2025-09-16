@@ -95,6 +95,7 @@ class _FilesScreenState extends State<FilesScreen> with SingleTickerProviderStat
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: "files_fab",
         onPressed: () {
           // Simuler l'ajout d'un nouveau fichier
           Provider.of<NotificationProvider>(context, listen: false).incrementNewFiles();

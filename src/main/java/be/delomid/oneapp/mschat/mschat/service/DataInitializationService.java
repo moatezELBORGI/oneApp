@@ -178,13 +178,29 @@ public class DataInitializationService implements CommandLineRunner {
                     .isAccountNonLocked(true)
             resident1 = residentRepository.save(resident1);
             resident2 = residentRepository.save(resident2);
+
+            resident2 = Resident.builder()
+                    .idUsers(UUID.randomUUID().toString())
+                    .fname("Bob")
+                    .lname("Dupont")
+                    .email("bob.dupont@test.com")
+                    .password(passwordEncoder.encode("password123"))
+                    .phoneNumber("+33987654321")
+                    .role(UserRole.RESIDENT)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .isEnabled(true)
+                    .isAccountNonExpired(true)
+                    .isAccountNonLocked(true)
+                    .isCredentialsNonExpired(true)
+                    .build();
+
                     .isCredentialsNonExpired(true)
             // Assigner les résidents aux appartements
             apartment1.setResident(resident1);
             apartment2.setResident(resident2);
             apartmentRepository.save(apartment1);
             apartmentRepository.save(apartment2);
-                    .build();
+
             log.info("Test data created:");
             log.info("- Building: {} (ID: {})", testBuilding.getBuildingLabel(), testBuilding.getBuildingId());
             log.info("- Resident 1: {} {} - Email: {} - Apartment: {}", 

@@ -20,7 +20,9 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
   @override
   void initState() {
     super.initState();
-    _loadBuildingResidents();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBuildingResidents();
+    });
   }
 
   void _loadBuildingResidents() async {

@@ -129,6 +129,7 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: "discussions_fab",
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
