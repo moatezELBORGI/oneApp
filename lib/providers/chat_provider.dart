@@ -82,15 +82,16 @@ class ChatProvider with ChangeNotifier {
   Future<void> sendMessage(int channelId, String content, String type, {int? replyToId}) async {
     // Récupérer l'ID de l'utilisateur actuel
     final currentUser = StorageService.getUser();
-    final currentUserId = currentUser?.id ?? 'unknown';
-    print('DEBUG: Sending message from user ID: $currentUserId'); // Debug log
+    // Utiliser l'email comme senderId pour être cohérent avec le backend
+    final senderId = currentUser?.email ?? 'unknown';
+    print('DEBUG: Sending message from user email: $senderId'); // Debug log
     
     try {
       // Créer un message temporaire pour l'affichage immédiat
       final tempMessage = Message(
         id: DateTime.now().millisecondsSinceEpoch, // ID temporaire
         channelId: channelId,
-        senderId: currentUserId,
+        senderId: senderId,
         content: content,
         type: type,
         replyToId: replyToId,
@@ -186,16 +187,15 @@ class ChatProvider with ChangeNotifier {
 
   void _handleNewMessage(Message message) {
     final currentUser = StorageService.getUser();
-    final currentUserId = currentUser?.id ?? 'unknown';
-    print('DEBUG: Received message from: ${message.senderId}, current user: $currentUserId'); // Debug log
+    print('DEBUG: Received message from: ${message.senderId}, current user ID: ${currentUser?.id}, current user email: ${currentUser?.email}'); // Debug log
     
     final channelMessages = _channelMessages[message.channelId] ?? [];
     
     // Remplacer le message temporaire s'il existe, sinon ajouter le nouveau
     final tempMessageIndex = channelMessages.indexWhere((m) => 
         m.content == message.content && 
-        m.senderId == currentUserId &&
-        message.senderId == currentUserId &&
+        (m.senderId == currentUser?.email || m.senderId == currentUser?.id) &&
+        (message.senderId == currentUser?.email || message.senderId == currentUser?.id) &&
         m.createdAt.difference(message.createdAt).abs().inSeconds < 5
     );
     

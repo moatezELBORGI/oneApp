@@ -220,12 +220,13 @@ class _ChatScreenState extends State<ChatScreen> {
                     
                     final messageIndex = typingUsers.isNotEmpty ? index - 1 : index;
                     final message = messages[messageIndex];
-                    final currentUserId = Provider.of<AuthProvider>(context, listen: false).user?.id;
-                    final isMe = message.senderId == currentUserId;
+                    final currentUser = Provider.of<AuthProvider>(context, listen: false).user;
+                    // Le backend peut renvoyer soit l'UUID soit l'email comme senderId
+                    final isMe = message.senderId == currentUser?.id || message.senderId == currentUser?.email;
                     
                     // Debug log pour vérifier l'identification
                     if (messageIndex < 3) { // Log seulement les 3 premiers messages pour éviter le spam
-                      print('DEBUG: Message from ${message.senderId}, current user: $currentUserId, isMe: $isMe');
+                      print('DEBUG: Message from ${message.senderId}, current user ID: ${currentUser?.id}, current user email: ${currentUser?.email}, isMe: $isMe');
                     }
                     
                     return MessageBubble(
