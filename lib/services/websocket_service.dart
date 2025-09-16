@@ -13,7 +13,7 @@ class WebSocketService {
 
   StompClient? _stompClient;
   bool _isConnected = false;
-  final Map<int, StompUnsubscribe> _subscriptions = {};
+  final Map<int, void Function()> _subscriptions = {};
   
   // Callbacks
   Function(Message)? onMessageReceived;
@@ -75,7 +75,7 @@ class WebSocketService {
     unsubscribeFromChannel(channelId);
 
     // Subscribe to messages
-    final messageUnsubscribe = _stompClient!.subscribe(
+    final messageSubscription = _stompClient!.subscribe(
       destination: '/topic/channel/$channelId',
       callback: (StompFrame frame) {
         if (frame.body != null) {
@@ -91,7 +91,7 @@ class WebSocketService {
     );
 
     // Subscribe to typing indicators
-    final typingUnsubscribe = _stompClient!.subscribe(
+    final typingSubscription = _stompClient!.subscribe(
       destination: '/topic/channel/$channelId/typing',
       callback: (StompFrame frame) {
         if (frame.body != null) {
@@ -111,8 +111,8 @@ class WebSocketService {
 
     // Store unsubscribe functions
     _subscriptions[channelId] = () {
-      messageUnsubscribe();
-      typingUnsubscribe();
+      messageSubscription();
+      typingSubscription();
     };
   }
 
