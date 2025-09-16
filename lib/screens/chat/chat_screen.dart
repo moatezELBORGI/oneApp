@@ -95,11 +95,6 @@ class _ChatScreenState extends State<ChatScreen> {
     if (image != null) {
       // TODO: Upload image and send message
       _sendMessage(content: image.path, type: Constants.messageTypeImage);
-    }
-  }
-
-  void _pickFile() async {
-    final result = await FilePicker.platform.pickFiles();
     
     if (result != null && result.files.single.path != null) {
       // TODO: Upload file and send message
@@ -107,7 +102,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _startRecording() async {
+  void _pickFile() async {
     setState(() {
       _isRecording = true;
     });
@@ -459,13 +454,10 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _takePhoto() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.camera);
-    
-    if (image != null) {
-      // TODO: Upload image and send message
-      _sendMessage(content: image.path, type: Constants.messageTypeImage);
+      // TODO: Upload file and send message
+      _sendMessage(content: result.files.single.path!, type: Constants.messageTypeFile);
     }
   }
 }
+    // TODO: Send audio message
+    _sendMessage(content: 'Audio message', type: 'AUDIO');
