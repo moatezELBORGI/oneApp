@@ -160,8 +160,8 @@ class _OtpScreenState extends State<OtpScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(6, (index) {
                   return SizedBox(
-                    width: 45,
-                    height: 55,
+                    width: 50,
+                    height: 60,
                     child: TextFormField(
                       controller: _controllers[index],
                       focusNode: _focusNodes[index],
@@ -169,21 +169,22 @@ class _OtpScreenState extends State<OtpScreen> {
                       keyboardType: TextInputType.number,
                       maxLength: 1,
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                       decoration: InputDecoration(
                         counterText: '',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           borderSide: const BorderSide(color: Colors.grey),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
