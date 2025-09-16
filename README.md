@@ -1,8 +1,14 @@
-# Service de Messagerie avec WebSockets et Sécurité JWT
+# MSChat - Application de Messagerie Monolithique
 
-Ce service de messagerie fait partie d'une architecture microservices SpringBoot. Il permet de gérer les immeubles, appartements, résidents et leurs canaux de discussion avec authentification JWT et communication temps réel via WebSockets.
+Application monolithique de messagerie pour immeubles avec authentification autonome, gestion des résidents et communication temps réel via WebSockets.
 
 ## Fonctionnalités
+
+### Authentification Autonome
+- **Inscription** : Email + mot de passe avec vérification OTP
+- **Connexion 2FA** : Email/mot de passe + code OTP par email
+- **JWT interne** : Génération et validation de tokens JWT
+- **Gestion des rôles** : RESIDENT, BUILDING_ADMIN, GROUP_ADMIN, SUPER_ADMIN
 
 ### Gestion des Immeubles
 - **Immeubles** : Gestion complète avec adresses et informations détaillées
@@ -17,11 +23,6 @@ Ce service de messagerie fait partie d'une architecture microservices SpringBoot
 - **BUILDING_GROUP** : Canal par groupe d'immeubles (1 par groupe)
 - **PUBLIC** : Canaux publics accessibles à tous
 
-### Sécurité
-- **JWT Authentication** : Intégration avec le service SSO via JWT
-- **WebSocket Security** : Authentification JWT pour les connexions WebSocket
-- **Permission-based Access** : Contrôle d'accès basé sur les rôles et permissions
-
 ### Fonctionnalités de Messagerie
 - Envoi de messages temps réel via WebSockets
 - Messages avec types (TEXT, IMAGE, FILE, SYSTEM)
@@ -30,28 +31,41 @@ Ce service de messagerie fait partie d'une architecture microservices SpringBoot
 - Indicateur "en train d'écrire"
 - Historique des messages avec pagination
 
+### Administration
+- **Gestion des comptes** : Approbation, rejet, blocage des inscriptions
+- **Attribution d'appartements** : Assignation des résidents aux appartements
+- **Admins par immeuble/groupe** : Gestion décentralisée
+
 ## Configuration
 
 ### Base de Données
 ```yaml
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/messaging_db
+    url: jdbc:postgresql://localhost:5432/mschat_db
     username: postgres
     password: postgres
 ```
 
-### Service SSO
-```yaml
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:9090
-```
+### Configuration Email
+L'application utilise Gmail SMTP pour l'envoi des codes OTP.
 
 ## API Endpoints
+
+### Authentification
+- `POST /auth/register` - Inscription avec email/mot de passe
+- `POST /auth/verify-registration` - Vérification OTP inscription
+- `POST /auth/login` - Connexion (étape 1)
+- `POST /auth/verify-login` - Vérification OTP connexion (étape 2)
+- `POST /auth/refresh` - Rafraîchissement du token JWT
+
+### Administration
+- `GET /admin/pending-registrations` - Liste des demandes d'inscription
+- `POST /admin/approve-registration/{id}` - Approuver une inscription
+- `POST /admin/reject-registration/{id}` - Rejeter une inscription
+- `POST /admin/block-account/{id}` - Bloquer un compte
+- `POST /admin/unblock-account/{id}` - Débloquer un compte
+- `GET /admin/building/{id}/residents` - Résidents d'un immeuble
 
 ### Immeubles
 - `POST /api/v1/buildings` - Créer un immeuble
@@ -102,7 +116,7 @@ spring:
 - `DELETE /api/v1/messages/{id}` - Supprimer un message
 
 ### WebSocket
-- **Connexion** : `ws://localhost:8082/ws`
+- **Connexion** : `ws://localhost:8080/ws`
 - **Envoyer un message** : `/app/message.send`
 - **Typing indicator** : `/app/message.typing`
 - **Écouter les messages** : `/topic/channel/{channelId}`
@@ -110,9 +124,59 @@ spring:
 
 ## Utilisation
 
+### 1. Inscription
+```javascript
+// Étape 1: Inscription
+const registerResponse = await fetch('/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        fname: 'John',
+        lname: 'Doe',
+        email: 'john@example.com',
+        password: 'password123'
+    })
+});
+
+// Étape 2: Vérification OTP
+const verifyResponse = await fetch('/auth/verify-registration', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        email: 'john@example.com',
+        otpCode: '123456'
+    })
+});
+```
+
+### 2. Connexion
+```javascript
+// Étape 1: Login
+const loginResponse = await fetch('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        email: 'john@example.com',
+        password: 'password123'
+    })
+});
+
+// Étape 2: Vérification OTP
+const verifyLoginResponse = await fetch('/auth/verify-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        email: 'john@example.com',
+        otpCode: '654321'
+    })
+});
+
+const { token } = await verifyLoginResponse.json();
+```
+
 ### 1. Authentification WebSocket
 ```javascript
-const token = "your-jwt-token";
+const token = "your-jwt-token"; // Obtenu après connexion
 const socket = new SockJS('/ws');
 const stompClient = Stomp.over(socket);
 
@@ -172,23 +236,21 @@ stompClient.subscribe('/topic/channel/1', function(message) {
 
 ## Démarrage
 
-1. **Base de données** : Créer la base `messaging_db` dans PostgreSQL
-2. **Service SSO** : S'assurer que le service d'authentification fonctionne sur le port 9090
+1. **Base de données** : Créer la base `mschat_db` dans PostgreSQL
+2. **Configuration email** : Vérifier les paramètres SMTP dans `application.properties`
 3. **Démarrer** : `./mvnw spring-boot:run`
 
-Le service sera disponible sur `http://localhost:8082`
+L'application sera disponible sur `http://localhost:8080`
 
-## Architecture
+### Compte Super Admin par défaut
+- Email: `admin@mschat.com`
+- Mot de passe: `SuperAdmin123!`
 
-```
-├── config/           # Configuration Spring (Security, WebSocket)
-├── controller/       # Contrôleurs REST et WebSocket
-├── dto/             # Objets de transfert de données
-├── exception/       # Gestion des exceptions
-├── interceptor/     # Intercepteur JWT pour WebSockets
-├── model/           # Entités JPA
-├── repository/      # Interfaces JPA Repository
-└── service/         # Logique métier
-```
+## Endpoints utiles
 
-Cette architecture respecte les principes SOLID et assure une séparation claire des responsabilités pour faciliter la maintenance et les tests.
+- **Application Info** : `GET /info`
+- **Health Check** : `GET /info/health`
+- **Actuator** : `GET /actuator/health`
+- **API Documentation** : `GET /swagger-ui.html`
+
+L'application est maintenant complètement autonome et monolithique !
