@@ -27,6 +27,9 @@ public interface ApartmentRepository extends JpaRepository<Apartment, String> {
 
     Optional<Apartment> findByResidentIdUsers(String userId);
 
+    @Query("SELECT a FROM Apartment a WHERE a.resident.email = :email")
+    Optional<Apartment> findByResidentEmail(@Param("email") String email);
+
     @Query("SELECT a FROM Apartment a WHERE a.apartmentFloor = :floor AND a.building.buildingId = :buildingId")
     List<Apartment> findByFloorAndBuildingId(@Param("floor") Integer floor, @Param("buildingId") String buildingId);
 }

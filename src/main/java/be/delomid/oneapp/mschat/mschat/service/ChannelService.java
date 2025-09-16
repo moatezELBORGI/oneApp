@@ -192,10 +192,35 @@ public class ChannelService {
     }
 
     private void validateUserBuildingAccess(String userId, String buildingId) {
+        // Récupérer l'utilisateur d'abord
+        Resident user = residentRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+        
+        // Vérifier par l'appartement
         Optional<Apartment> userApartment = apartmentRepository.findByResidentIdUsers(userId);
-        if (userApartment.isEmpty() || !userApartment.get().getBuilding().getBuildingId().equals(buildingId)) {
-            throw new UnauthorizedAccessException("User does not live in this building");
+        if (userApartment.isPresent() && userApartment.get().getBuilding().getBuildingId().equals(buildingId)) {
+            return; // Utilisateur trouvé via appartement
         }
+        
+        // Vérifier par email (fallback)
+        Optional<Apartment> apartmentByEmail = apartmentRepository.findByResidentEmail(user.getEmail());
+        if (apartmentByEmail.isPresent() && apartmentByEmail.get().getBuilding().getBuildingId().equals(buildingId)) {
+            return; // Utilisateur trouvé via email
+        }
+        
+        // Si admin du bâtiment, autoriser l'accès
+        if (user.getRole() == UserRole.BUILDING_ADMIN && buildingId.equals(user.getManagedBuildingId())) {
+            return;
+        }
+        
+        // Si super admin, autoriser l'accès
+        if (user.getRole() == UserRole.SUPER_ADMIN) {
+            return;
+        }
+        
+        log.debug("Access denied for user {} to building {}. User apartment: {}, User email: {}", 
+                 userId, buildingId, userApartment.map(a -> a.getIdApartment()).orElse("none"), user.getEmail());
+        throw new UnauthorizedAccessException("User does not live in this building");
     }
 
     private void validateChannelCreation(CreateChannelRequest request, String createdBy) {

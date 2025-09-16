@@ -5,6 +5,8 @@ import be.delomid.oneapp.mschat.mschat.dto.ChannelDto;
 import be.delomid.oneapp.mschat.mschat.dto.CreateChannelRequest;
 import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
 import be.delomid.oneapp.mschat.mschat.service.ChannelService;
+import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
+import be.delomid.oneapp.mschat.mschat.model.Resident;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +25,7 @@ import java.util.Optional;
 public class ChannelController {
 
     private final ChannelService channelService;
+    private final ResidentRepository residentRepository;
 
     @PostMapping
     public ResponseEntity<ChannelDto> createChannel(
@@ -117,7 +120,14 @@ public class ChannelController {
     }
 
     private String getUserId(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return userDetails.getUsername(); // Email, mais on devrait récupérer l'ID
+        // Récupérer l'ID utilisateur depuis le JWT
+        if (authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            // Chercher l'utilisateur par email pour récupérer son ID
+            return residentRepository.findByEmail(userDetails.getUsername())
+                    .map(Resident::getIdUsers)
+                    .orElse(userDetails.getUsername());
+        }
+        return authentication.getName();
     }
 }

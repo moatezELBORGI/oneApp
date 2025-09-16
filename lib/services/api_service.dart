@@ -157,24 +157,6 @@ class ApiService {
   Future<Map<String, dynamic>> getBuildingResidents(String buildingId) async {
     print('DEBUG: Making API call to: $baseUrl/channels/building/$buildingId/residents');
     
-    // Essayer d'abord l'endpoint residents direct
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/residents/building/$buildingId'),
-        headers: await _getHeaders(),
-      );
-      
-      print('DEBUG: Direct residents API response status: ${response.statusCode}');
-      print('DEBUG: Direct residents API response body: ${response.body}');
-      
-      if (response.statusCode == 200) {
-        return _handleResponse(response);
-      }
-    } catch (e) {
-      print('DEBUG: Direct residents endpoint failed: $e');
-    }
-    
-    // Fallback vers l'endpoint channels
     final response = await http.get(
       Uri.parse('$baseUrl/channels/building/$buildingId/residents'),
       headers: await _getHeaders(),
