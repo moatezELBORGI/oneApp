@@ -47,6 +47,14 @@ class _MainScreenState extends State<MainScreen> {
             unselectedItemColor: AppTheme.textSecondary,
             backgroundColor: Colors.white,
             elevation: 8,
+            selectedFontSize: 12,
+            unselectedFontSize: 12,
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w500,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w400,
+            ),
             items: [
               const BottomNavigationBarItem(
                 icon: Icon(Icons.home_outlined),

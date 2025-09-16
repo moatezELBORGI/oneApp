@@ -46,12 +46,22 @@ class AppTheme {
       ),
       
       // Bottom Navigation Theme
-      bottomNavigationBarTheme: const BottomNavigationBarTheme(
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
         selectedItemColor: primaryColor,
         unselectedItemColor: textSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
+        selectedLabelStyle: TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+        ),
       ),
       
       // Card Theme
@@ -66,14 +76,14 @@ class AppTheme {
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: const Color(0xFFFAFAFA),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -82,6 +92,10 @@ class AppTheme {
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: errorColor),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: errorColor, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
