@@ -13,6 +13,7 @@ class WebSocketService {
 
   StompClient? _stompClient;
   bool _isConnected = false;
+  final Map<int, StompUnsubscribe> _subscriptions = {};
   
   // Callbacks
   Function(Message)? onMessageReceived;
@@ -70,8 +71,11 @@ class WebSocketService {
   void subscribeToChannel(int channelId) {
     if (!_isConnected || _stompClient == null) return;
 
+    // Unsubscribe from existing subscriptions for this channel
+    unsubscribeFromChannel(channelId);
+
     // Subscribe to messages
-    _stompClient!.subscribe(
+    final messageUnsubscribe = _stompClient!.subscribe(
       destination: '/topic/channel/$channelId',
       callback: (StompFrame frame) {
         if (frame.body != null) {
@@ -87,7 +91,7 @@ class WebSocketService {
     );
 
     // Subscribe to typing indicators
-    _stompClient!.subscribe(
+    final typingUnsubscribe = _stompClient!.subscribe(
       destination: '/topic/channel/$channelId/typing',
       callback: (StompFrame frame) {
         if (frame.body != null) {
@@ -104,13 +108,20 @@ class WebSocketService {
         }
       },
     );
+
+    // Store unsubscribe functions
+    _subscriptions[channelId] = () {
+      messageUnsubscribe();
+      typingUnsubscribe();
+    };
   }
 
   void unsubscribeFromChannel(int channelId) {
-    if (!_isConnected || _stompClient == null) return;
-
-    _stompClient!.unsubscribe(destination: '/topic/channel/$channelId');
-    _stompClient!.unsubscribe(destination: '/topic/channel/$channelId/typing');
+    final unsubscribe = _subscriptions[channelId];
+    if (unsubscribe != null) {
+      unsubscribe();
+      _subscriptions.remove(channelId);
+    }
   }
 
   void sendMessage(int channelId, String content, String type, {int? replyToId}) {
@@ -144,6 +155,12 @@ class WebSocketService {
   }
 
   void disconnect() {
+    // Unsubscribe from all channels
+    for (final unsubscribe in _subscriptions.values) {
+      unsubscribe();
+    }
+    _subscriptions.clear();
+    
     if (_stompClient != null) {
       _stompClient!.deactivate();
       _stompClient = null;
