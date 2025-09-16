@@ -161,6 +161,20 @@ class MessageBubble extends StatelessWidget {
             width: 200,
             height: 150,
             fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                width: 200,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            },
             errorBuilder: (context, error, stackTrace) {
               return Container(
                 width: 200,
@@ -178,22 +192,12 @@ class MessageBubble extends StatelessWidget {
             },
           ),
         ),
-        if (message.content.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              message.content,
-              style: TextStyle(
-                color: isMe ? Colors.white : AppTheme.textPrimary,
-              ),
-            ),
-          ),
       ],
     );
   }
 
   Widget _buildFileMessage() {
-    final fileName = message.content.split('/').last;
+    final fileName = message.content.split('/').last.split('?').first;
     
     return Container(
       padding: const EdgeInsets.all(12),
@@ -201,25 +205,30 @@ class MessageBubble extends StatelessWidget {
         color: Colors.black.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.insert_drive_file,
-            color: isMe ? Colors.white : AppTheme.primaryColor,
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              fileName,
-              style: TextStyle(
-                color: isMe ? Colors.white : AppTheme.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
+      child: InkWell(
+        onTap: () {
+          // TODO: Open file or download
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.insert_drive_file,
+              color: isMe ? Colors.white : AppTheme.primaryColor,
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                fileName,
+                style: TextStyle(
+                  color: isMe ? Colors.white : AppTheme.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -231,31 +240,36 @@ class MessageBubble extends StatelessWidget {
         color: Colors.black.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.play_arrow,
-            color: isMe ? Colors.white : AppTheme.primaryColor,
-          ),
-          const SizedBox(width: 8),
-          Container(
-            width: 100,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(2),
+      child: InkWell(
+        onTap: () {
+          // TODO: Play audio
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.play_arrow,
+              color: isMe ? Colors.white : AppTheme.primaryColor,
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '0:30',
-            style: TextStyle(
-              color: isMe ? Colors.white70 : Colors.grey[600],
-              fontSize: 12,
+            const SizedBox(width: 8),
+            Container(
+              width: 100,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Text(
+              '0:30',
+              style: TextStyle(
+                color: isMe ? Colors.white70 : Colors.grey[600],
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

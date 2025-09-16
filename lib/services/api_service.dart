@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart';
 import '../utils/constants.dart';
 import 'storage_service.dart';
 
@@ -169,15 +171,33 @@ class ApiService {
 
   // File upload
   Future<Map<String, dynamic>> uploadFile(File file, String type) async {
-    // This would typically upload to a file storage service
-    // For now, we'll simulate the upload
-    await Future.delayed(const Duration(seconds: 2));
-    
-    return {
-      'success': true,
-      'url': 'https://example.com/files/${file.path.split('/').last}',
-      'type': type,
-    };
+    try {
+      final uri = Uri.parse('$baseUrl/files/upload');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Add headers
+      final headers = await _getHeaders();
+      request.headers.addAll(headers);
+      
+      // Add file
+      final mimeType = lookupMimeType(file.path);
+      final multipartFile = await http.MultipartFile.fromPath(
+        'file',
+        file.path,
+        contentType: mimeType != null ? MediaType.parse(mimeType) : null,
+      );
+      request.files.add(multipartFile);
+      
+      // Add type parameter
+      request.fields['type'] = type;
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      return _handleResponse(response);
+    } catch (e) {
+      throw ApiException(message: 'Failed to upload file: $e', statusCode: 500);
+    }
   }
 
   Map<String, dynamic> _handleResponse(http.Response response) {

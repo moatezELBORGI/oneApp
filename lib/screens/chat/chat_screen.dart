@@ -108,8 +108,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final image = await picker.pickImage(source: ImageSource.gallery);
     
     if (image != null) {
-      // TODO: Upload image and get URL
-      _sendMessage(content: image.path, type: Constants.messageTypeImage);
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      await chatProvider.sendMessageWithFile(
+        widget.channel.id,
+        File(image.path),
+        Constants.messageTypeImage,
+      );
     }
   }
 
@@ -118,8 +122,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final image = await picker.pickImage(source: ImageSource.camera);
     
     if (image != null) {
-      // TODO: Upload image and get URL
-      _sendMessage(content: image.path, type: Constants.messageTypeImage);
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      await chatProvider.sendMessageWithFile(
+        widget.channel.id,
+        File(image.path),
+        Constants.messageTypeImage,
+      );
     }
   }
 
@@ -127,25 +135,47 @@ class _ChatScreenState extends State<ChatScreen> {
     final result = await FilePicker.platform.pickFiles();
     
     if (result != null && result.files.single.path != null) {
-      // TODO: Upload file and get URL
-      _sendMessage(content: result.files.single.path!, type: Constants.messageTypeFile);
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      await chatProvider.sendMessageWithFile(
+        widget.channel.id,
+        File(result.files.single.path!),
+        Constants.messageTypeFile,
+      );
     }
   }
 
   void _startRecording() async {
+    final audioService = AudioService();
+    
     setState(() {
       _isRecording = true;
     });
     
-    // TODO: Implement audio recording
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final audioPath = await audioService.startRecording();
+      if (audioPath != null) {
+        // Wait for user to stop recording (you might want to add a stop button)
+        await Future.delayed(const Duration(seconds: 3)); // Example duration
+        
+        await audioService.stopRecording();
+        
+        // Send audio file
+        final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+        await chatProvider.sendMessageWithFile(
+          widget.channel.id,
+          File(audioPath),
+          'AUDIO',
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de l\'enregistrement: $e')),
+      );
+    }
     
     setState(() {
       _isRecording = false;
     });
-    
-    // TODO: Send audio message
-    _sendMessage(content: 'Audio message', type: 'AUDIO');
   }
 
   // ==================== UI BUILDERS ====================
