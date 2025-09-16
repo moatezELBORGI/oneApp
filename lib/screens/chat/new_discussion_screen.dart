@@ -27,13 +27,19 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
     
+    print('DEBUG: Loading residents for building: ${authProvider.user?.buildingId}');
+    
     if (authProvider.user?.buildingId != null) {
       await channelProvider.loadBuildingResidents(authProvider.user!.buildingId!);
+      print('DEBUG: Loaded ${channelProvider.buildingResidents.length} residents');
       setState(() {
         _filteredResidents = channelProvider.buildingResidents
             .where((resident) => resident.id != authProvider.user?.id)
             .toList();
+        print('DEBUG: Filtered to ${_filteredResidents.length} residents (excluding current user)');
       });
+    } else {
+      print('DEBUG: No building ID found for current user');
     }
   }
 
@@ -112,6 +118,35 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
               builder: (context, channelProvider, child) {
                 if (channelProvider.isLoading) {
                   return const Center(child: CircularProgressIndicator());
+                }
+                
+                if (channelProvider.error != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Erreur: ${channelProvider.error}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadBuildingResidents,
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 if (_filteredResidents.isEmpty) {

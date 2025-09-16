@@ -155,11 +155,14 @@ class ApiService {
 
   // Residents endpoints
   Future<Map<String, dynamic>> getBuildingResidents(String buildingId) async {
+    print('DEBUG: Making API call to: $baseUrl/channels/building/$buildingId/residents');
     final response = await http.get(
       Uri.parse('$baseUrl/channels/building/$buildingId/residents'),
       headers: await _getHeaders(),
     );
 
+    print('DEBUG: API response status: ${response.statusCode}');
+    print('DEBUG: API response body: ${response.body}');
     return _handleResponse(response);
   }
 

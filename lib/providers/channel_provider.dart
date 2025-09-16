@@ -87,15 +87,19 @@ class ChannelProvider with ChangeNotifier {
   }
 
   Future<void> loadBuildingResidents(String buildingId) async {
+    print('DEBUG: API call to load residents for building: $buildingId');
     _setLoading(true);
     _clearError();
 
     try {
       final response = await _apiService.getBuildingResidents(buildingId);
+      print('DEBUG: API response: $response');
       _buildingResidents = (response as List)
           .map((json) => User.fromJson(json))
           .toList();
+      print('DEBUG: Parsed ${_buildingResidents.length} residents');
     } catch (e) {
+      print('DEBUG: Error loading residents: $e');
       _setError(e.toString());
     } finally {
       _setLoading(false);
