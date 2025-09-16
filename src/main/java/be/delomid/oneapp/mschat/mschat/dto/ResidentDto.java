@@ -1,5 +1,7 @@
 package be.delomid.oneapp.mschat.mschat.dto;
 
+import be.delomid.oneapp.mschat.mschat.model.AccountStatus;
+import be.delomid.oneapp.mschat.mschat.model.UserRole;
 import lombok.Builder;
 import lombok.Data;
 
@@ -16,6 +18,10 @@ public class ResidentDto {
     private String picture;
     private String apartmentId;
     private String buildingId;
+    private UserRole role;
+    private AccountStatus accountStatus;
+    private String managedBuildingId;
+    private String managedBuildingGroupId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

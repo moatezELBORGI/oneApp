@@ -10,7 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -63,6 +63,7 @@ public class MessageController {
     }
 
     private String getUserId(Authentication authentication) {
-        return ((Jwt) authentication.getPrincipal()).getSubject();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        return userDetails.getUsername(); // Email, mais on devrait récupérer l'ID
     }
 }

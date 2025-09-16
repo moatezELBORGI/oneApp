@@ -3,8 +3,10 @@ package be.delomid.oneapp.mschat.mschat.service;
 
 import be.delomid.oneapp.mschat.mschat.dto.CreateResidentRequest;
 import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
+import be.delomid.oneapp.mschat.mschat.model.AccountStatus;
 import be.delomid.oneapp.mschat.mschat.model.Apartment;
 import be.delomid.oneapp.mschat.mschat.model.Resident;
+import be.delomid.oneapp.mschat.mschat.model.UserRole;
 import be.delomid.oneapp.mschat.mschat.repository.ApartmentRepository;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class ResidentService {
 
     private final ResidentRepository residentRepository;
     private final ApartmentRepository apartmentRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public ResidentDto createResident(CreateResidentRequest request) {
@@ -42,8 +45,11 @@ public class ResidentService {
                 .fname(request.getFname())
                 .lname(request.getLname())
                 .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .phoneNumber(request.getPhoneNumber())
                 .picture(request.getPicture())
+                .role(UserRole.RESIDENT)
+                .accountStatus(AccountStatus.PENDING)
                 .build();
 
         resident = residentRepository.save(resident);
@@ -96,6 +102,9 @@ public class ResidentService {
         resident.setFname(request.getFname());
         resident.setLname(request.getLname());
         resident.setEmail(request.getEmail());
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+            resident.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
         resident.setPhoneNumber(request.getPhoneNumber());
         resident.setPicture(request.getPicture());
 
@@ -143,6 +152,10 @@ public class ResidentService {
                 .email(resident.getEmail())
                 .phoneNumber(resident.getPhoneNumber())
                 .picture(resident.getPicture())
+                .role(resident.getRole())
+                .accountStatus(resident.getAccountStatus())
+                .managedBuildingId(resident.getManagedBuildingId())
+                .managedBuildingGroupId(resident.getManagedBuildingGroupId())
                 .apartmentId(apartmentId)
                 .buildingId(buildingId)
                 .createdAt(resident.getCreatedAt())

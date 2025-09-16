@@ -2,12 +2,11 @@ package be.delomid.oneapp.mschat.mschat.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class CreateResidentRequest {
-    
-    private String idUsers;
+public class RegisterRequest {
     
     @NotBlank(message = "First name is required")
     private String fname;
@@ -25,4 +24,8 @@ public class CreateResidentRequest {
     
     private String phoneNumber;
     private String picture;
+    
+    // Informations pour demande d'appartement
+    private String requestedBuildingId;
+    private String requestedApartmentId;
 }

@@ -1,5 +1,6 @@
 package be.delomid.oneapp.mschat.mschat.interceptor;
 
+import be.delomid.oneapp.mschat.mschat.config.JwtConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
@@ -8,9 +9,6 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 
 import java.security.Principal;
@@ -21,7 +19,7 @@ import java.util.List;
 public class JwtWebSocketInterceptor implements ChannelInterceptor {
 
     @Autowired
-    private JwtDecoder jwtDecoder;
+    private JwtConfig jwtConfig;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -37,13 +35,18 @@ public class JwtWebSocketInterceptor implements ChannelInterceptor {
                 }
                 
                 try {
-                    Jwt jwt = jwtDecoder.decode(token);
-                    String userId = jwt.getSubject();
+                    String email = jwtConfig.extractUsername(token);
+                    String userId = jwtConfig.extractUserId(token);
                     
-                    accessor.setUser(new JwtPrincipal(userId, jwt));
-                    log.debug("WebSocket connection authenticated for user: {}", userId);
+                    if (jwtConfig.validateToken(token, email)) {
+                        accessor.setUser(new JwtPrincipal(userId, email));
+                        log.debug("WebSocket connection authenticated for user: {}", userId);
+                    } else {
+                        log.error("Invalid JWT token for WebSocket connection");
+                        return null;
+                    }
                     
-                } catch (JwtException e) {
+                } catch (Exception e) {
                     log.error("JWT validation failed: {}", e.getMessage());
                     return null; // Reject the connection
                 }
@@ -58,11 +61,11 @@ public class JwtWebSocketInterceptor implements ChannelInterceptor {
 
     public static class JwtPrincipal implements Principal {
         private final String name;
-        private final Jwt jwt;
+        private final String email;
 
-        public JwtPrincipal(String name, Jwt jwt) {
+        public JwtPrincipal(String name, String email) {
             this.name = name;
-            this.jwt = jwt;
+            this.email = email;
         }
 
         @Override
@@ -70,8 +73,8 @@ public class JwtWebSocketInterceptor implements ChannelInterceptor {
             return name;
         }
 
-        public Jwt getJwt() {
-            return jwt;
+        public String getEmail() {
+            return email;
         }
     }
 }

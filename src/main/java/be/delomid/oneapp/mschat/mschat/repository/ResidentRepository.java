@@ -28,4 +28,13 @@ public interface ResidentRepository extends JpaRepository<Resident, String> {
 
     @Query("SELECT r FROM Resident r WHERE r.apartment.apartmentFloor = :floor AND r.apartment.building.buildingId = :buildingId")
     List<Resident> findByFloorAndBuildingId(@Param("floor") Integer floor, @Param("buildingId") String buildingId);
+    
+    @Query("SELECT r FROM Resident r WHERE r.role = :role AND r.managedBuildingId = :buildingId")
+    List<Resident> findBuildingAdmins(@Param("role") UserRole role, @Param("buildingId") String buildingId);
+    
+    @Query("SELECT r FROM Resident r WHERE r.role = :role AND r.managedBuildingGroupId = :buildingGroupId")
+    List<Resident> findBuildingGroupAdmins(@Param("role") UserRole role, @Param("buildingGroupId") String buildingGroupId);
+    
+    @Query("SELECT r FROM Resident r WHERE r.accountStatus = :status")
+    Page<Resident> findByAccountStatus(@Param("status") AccountStatus status, Pageable pageable);
 }
