@@ -70,7 +70,7 @@ public class ChannelService {
         log.debug("Getting channels for user: {}", userId);
 
         Page<Channel> channels = channelRepository.findChannelsByUserId(userId, pageable);
-        return channels.map(channel -> convertToDto(channel, userId));
+        return channels.map(this::convertToDto);
     }
 
     public ChannelDto getChannelById(Long channelId, String userId) {
@@ -80,7 +80,7 @@ public class ChannelService {
         // Vérifier que l'utilisateur est membre du canal
         validateChannelAccess(channel, userId);
 
-        return convertToDto(channel, userId);
+        return convertToDto(channel);
     }
 
     @Transactional
@@ -127,24 +127,17 @@ public class ChannelService {
         Optional<Channel> existingChannel = channelRepository.findOneToOneChannel(userId1, userId2);
 
         if (existingChannel.isPresent()) {
-            return Optional.of(convertToDto(existingChannel.get(), userId1));
+            return Optional.of(convertToDto(existingChannel.get()));
         }
-
-        // Récupérer les informations des deux utilisateurs pour créer le nom
-        Resident user1 = residentRepository.findById(userId1)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId1));
-        Resident user2 = residentRepository.findById(userId2)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId2));
 
         // Créer un nouveau canal one-to-one
         CreateChannelRequest request = new CreateChannelRequest();
-        request.setName(user2.getFname() + " " + user2.getLname());
+        request.setName("Direct Message");
         request.setType(ChannelType.ONE_TO_ONE);
         request.setIsPrivate(true);
         request.setMemberIds(List.of(userId2));
 
-        ChannelDto channel = createChannel(request, userId1);
-        return Optional.of(channel);
+        return Optional.of(createChannel(request, userId1));
     }
 
     public List<ChannelDto> getBuildingChannels(String buildingId, String userId) {
@@ -284,31 +277,11 @@ public class ChannelService {
     }
 
     private ChannelDto convertToDto(Channel channel) {
-        return convertToDto(channel, null);
-    }
-    
-    private ChannelDto convertToDto(Channel channel, String currentUserId) {
         Long memberCount = channelMemberRepository.countActiveByChannelId(channel.getId());
-        
-        String displayName = channel.getName();
-        
-        // Pour les canaux ONE_TO_ONE, afficher le nom de l'autre utilisateur
-        if (channel.getType() == ChannelType.ONE_TO_ONE && currentUserId != null) {
-            List<ChannelMember> members = channelMemberRepository.findActiveByChannelId(channel.getId());
-            for (ChannelMember member : members) {
-                if (!member.getUserId().equals(currentUserId)) {
-                    Optional<Resident> otherUser = residentRepository.findById(member.getUserId());
-                    if (otherUser.isPresent()) {
-                        displayName = otherUser.get().getFname() + " " + otherUser.get().getLname();
-                        break;
-                    }
-                }
-            }
-        }
 
         return ChannelDto.builder()
                 .id(channel.getId())
-                .name(displayName)
+                .name(channel.getName())
                 .description(channel.getDescription())
                 .type(channel.getType())
                 .buildingId(channel.getBuildingId())

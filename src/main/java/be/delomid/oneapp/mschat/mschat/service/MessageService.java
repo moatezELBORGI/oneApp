@@ -152,14 +152,14 @@ public class MessageService {
         FileAttachmentDto fileAttachmentDto = null;
         if (message.getFileAttachment() != null) {
             FileAttachment file = message.getFileAttachment();
-            String baseUrl = "http://192.168.1.5:9090/api/v1/files/";
+            String baseUrl = "http://localhost:9090/api/v1/files/";
 
             fileAttachmentDto = FileAttachmentDto.builder()
                     .id(file.getId())
                     .originalFilename(file.getOriginalFilename())
                     .storedFilename(file.getStoredFilename())
                     .filePath(file.getFilePath())
-                    .downloadUrl(baseUrl + "download/" + file.getStoredFilename())
+                    .downloadUrl(baseUrl + "download/" + file.getFilePath())
                     .fileSize(file.getFileSize())
                     .mimeType(file.getMimeType())
                     .fileType(file.getFileType())
@@ -167,7 +167,7 @@ public class MessageService {
                     .duration(file.getDuration())
                     .thumbnailPath(file.getThumbnailPath())
                     .thumbnailUrl(file.getThumbnailPath() != null ?
-                            baseUrl + "view/" + file.getStoredFilename() : null)
+                            baseUrl + "view/" + file.getThumbnailPath() : null)
                     .createdAt(file.getCreatedAt())
                     .build();
         }

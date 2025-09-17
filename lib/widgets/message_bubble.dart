@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../services/file_download_service.dart';
 import '../models/message_model.dart';
 import '../utils/app_theme.dart';
 import '../utils/constants.dart';
@@ -155,96 +154,50 @@ class MessageBubble extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GestureDetector(
-          onTap: () {
-            // Ouvrir l'image en plein écran
-            _showImageFullScreen(context);
-          },
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              message.fileAttachment?.downloadUrl ?? message.content,
-              width: 200,
-              height: 150,
-              fit: BoxFit.cover,
-              headers: const {
-                'Accept': 'image/*',
-              },
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  width: 200,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 200,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.image_not_supported,
-                    size: 50,
-                    color: Colors.grey,
-                  ),
-                );
-              },
-            ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            message.content,
+            width: 200,
+            height: 150,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                width: 200,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: 200,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.image_not_supported,
+                  size: 50,
+                  color: Colors.grey,
+                ),
+              );
+            },
           ),
         ),
       ],
     );
   }
-  
-  void _showImageFullScreen(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.black,
-        child: Stack(
-          children: [
-            Center(
-              child: InteractiveViewer(
-                child: Image.network(
-                  message.fileAttachment?.downloadUrl ?? message.content,
-                  fit: BoxFit.contain,
-                  headers: const {
-                    'Accept': 'image/*',
-                  },
-                ),
-              ),
-            ),
-            Positioned(
-              top: 40,
-              right: 20,
-              child: IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 30,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildFileMessage() {
-    final fileName = message.fileAttachment?.originalFilename ?? 
-                    message.content.split('/').last.split('?').first;
+    final fileName = message.content.split('/').last.split('?').first;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -254,103 +207,22 @@ class MessageBubble extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          _downloadFile();
+          // TODO: Open file or download
         },
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              _getFileIcon(),
+              Icons.insert_drive_file,
               color: isMe ? Colors.white : AppTheme.primaryColor,
             ),
             const SizedBox(width: 8),
             Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    fileName,
-                    style: TextStyle(
-                      color: isMe ? Colors.white : AppTheme.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (message.fileAttachment?.fileSize != null)
-                    Text(
-                      _formatFileSize(message.fileAttachment!.fileSize!),
-                      style: TextStyle(
-                        color: isMe ? Colors.white70 : Colors.grey[600],
-                        fontSize: 12,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.download,
-              color: isMe ? Colors.white70 : Colors.grey[600],
-              size: 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  IconData _getFileIcon() {
-    final mimeType = message.fileAttachment?.mimeType ?? '';
-    
-    if (mimeType.startsWith('image/')) {
-      return Icons.image;
-    } else if (mimeType.startsWith('video/')) {
-      return Icons.video_file;
-    } else if (mimeType.startsWith('audio/')) {
-      return Icons.audio_file;
-    } else if (mimeType.contains('pdf')) {
-      return Icons.picture_as_pdf;
-    } else if (mimeType.contains('word') || mimeType.contains('document')) {
-      return Icons.description;
-    } else if (mimeType.contains('excel') || mimeType.contains('spreadsheet')) {
-      return Icons.table_chart;
-    } else {
-      return Icons.insert_drive_file;
-    }
-  }
-  
-  String _formatFileSize(int bytes) {
-    if (bytes < 1024) {
-      return '$bytes B';
-    } else if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    } else if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    } else {
-      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-    }
-  }
-  
-  void _downloadFile() async {
-    if (message.fileAttachment?.downloadUrl != null) {
-      try {
-        final fileDownloadService = FileDownloadService();
-        await fileDownloadService.downloadAndSaveFile(
-          context,
-          message.fileAttachment!.downloadUrl,
-          message.fileAttachment!.originalFilename,
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors du téléchargement'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
-    }
-  }
-
+              child: Text(
+                fileName,
+                style: TextStyle(
+                  color: isMe ? Colors.white : AppTheme.textPrimary,
+                  fontWeight: FontWeight.w500,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),

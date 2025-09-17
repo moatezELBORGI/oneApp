@@ -33,16 +33,6 @@ public class FileController {
     public ResponseEntity<byte[]> getFile(@PathVariable String fileId) {
         return fileService.getFile(fileId);
     }
-    
-    @GetMapping("/download/{fileId}")
-    public ResponseEntity<byte[]> downloadFile(@PathVariable String fileId) {
-        return fileService.downloadFile(fileId);
-    }
-    
-    @GetMapping("/view/{fileId}")
-    public ResponseEntity<byte[]> viewFile(@PathVariable String fileId) {
-        return fileService.viewFile(fileId);
-    }
 
     @DeleteMapping("/{fileId}")
     public ResponseEntity<Void> deleteFile(
