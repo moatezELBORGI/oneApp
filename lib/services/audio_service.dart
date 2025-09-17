@@ -8,7 +8,7 @@ class AudioService {
   factory AudioService() => _instance;
   AudioService._internal();
 
-  final Record _recorder = Record();
+  final AudioRecorder _recorder = AudioRecorder();
   bool _isRecording = false;
   String? _currentRecordingPath;
 
@@ -34,18 +34,20 @@ class AudioService {
     }
 
     try {
-      final directory = await getTemporaryDirectory();
-      final filePath = '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      
-      print('DEBUG: Recording to path: $filePath');
-
       // Vérifier si le microphone est disponible
       if (await _recorder.hasPermission()) {
+        final directory = await getTemporaryDirectory();
+        final filePath = '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        
+        print('DEBUG: Recording to path: $filePath');
+
         await _recorder.start(
+          const RecordConfig(
+            encoder: AudioEncoder.aacLc,
+            bitRate: 128000,
+            sampleRate: 44100,
+          ),
           path: filePath,
-          encoder: AudioEncoder.aacLc,
-          bitRate: 128000,
-          samplingRate: 44100,
         );
 
         _isRecording = true;

@@ -39,9 +39,8 @@ dependencies:
   path_provider: ^2.1.1
   
   # Audio
-  record: ^5.0.4
+  record: ^5.1.0
   audioplayers: ^5.2.1
-  audio_waveforms: ^1.0.5
   
   # Utils
   intl: ^0.18.1
