@@ -39,7 +39,8 @@ dependencies:
   path_provider: ^2.1.1
   
   # Audio
-  flutter_sound: ^9.2.13
+  record: ^5.0.4
+  audioplayers: ^5.2.1
   audio_waveforms: ^1.0.5
   
   # Utils

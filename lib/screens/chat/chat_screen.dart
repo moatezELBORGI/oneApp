@@ -29,6 +29,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isRecording = false;
   bool _isTyping = false;
   bool _hasText = false;
+  String? _recordingPath;
 
   @override
   void initState() {
@@ -164,35 +165,99 @@ class _ChatScreenState extends State<ChatScreen> {
   void _startRecording() async {
     final audioService = AudioService();
 
+    // Vérifier les permissions d'abord
+    if (!await audioService.requestPermissions()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Permission microphone requise pour enregistrer'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isRecording = true;
     });
 
     try {
-      final audioPath = await audioService.startRecording();
-      if (audioPath != null) {
-        // Wait for user to stop recording (you might want to add a stop button)
-        await Future.delayed(const Duration(seconds: 3)); // Example duration
-
-        await audioService.stopRecording();
-        final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-        await chatProvider.sendMessageWithFile(
-          widget.channel.id,
-          File(audioPath),
-          'AUDIO',
-        );
+      _recordingPath = await audioService.startRecording();
+      if (_recordingPath == null) {
+        throw Exception('Impossible de démarrer l\'enregistrement');
       }
+      
+      print('DEBUG: Recording started at path: $_recordingPath');
     } catch (e) {
+      print('DEBUG: Error starting recording: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur lors de l\'enregistrement: $e')),
         );
       }
+      setState(() {
+        _isRecording = false;
+        _recordingPath = null;
+      });
     }
+  }
 
-    setState(() {
-      _isRecording = false;
-    });
+  void _stopRecording() async {
+    if (!_isRecording || _recordingPath == null) return;
+
+    final audioService = AudioService();
+
+    try {
+      await audioService.stopRecording();
+      
+      setState(() {
+        _isRecording = false;
+      });
+
+      // Vérifier que le fichier existe
+      final file = File(_recordingPath!);
+      if (await file.exists()) {
+        final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+        await chatProvider.sendMessageWithFile(
+          widget.channel.id,
+          file,
+          'AUDIO',
+        );
+        print('DEBUG: Audio message sent successfully');
+      } else {
+        throw Exception('Fichier audio non trouvé');
+      }
+    } catch (e) {
+      print('DEBUG: Error stopping recording: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'envoi: $e')),
+        );
+      }
+    } finally {
+      setState(() {
+        _isRecording = false;
+        _recordingPath = null;
+      });
+    }
+  }
+
+  void _cancelRecording() async {
+    if (!_isRecording) return;
+
+    final audioService = AudioService();
+
+    try {
+      await audioService.cancelRecording();
+    } catch (e) {
+      print('DEBUG: Error cancelling recording: $e');
+    } finally {
+      setState(() {
+        _isRecording = false;
+        _recordingPath = null;
+      });
+    }
   }
 
   // ==================== UI BUILDERS ====================
@@ -407,24 +472,103 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMicrophoneButton() {
-    return GestureDetector(
+    return _isRecording 
+        ? _buildRecordingControls()
+        : GestureDetector(
       key: const ValueKey('mic'),
-      onLongPress: _startRecording,
+      onTap: _startRecording,
       child: Container(
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: _isRecording
-              ? AppTheme.errorColor
-              : Colors.grey[400],
+          color: Colors.grey[400],
           borderRadius: BorderRadius.circular(24),
         ),
         child: Icon(
-          _isRecording ? Icons.stop : Icons.mic,
+          Icons.mic,
           color: Colors.white,
           size: 20,
         ),
       ),
+    );
+  }
+
+  Widget _buildRecordingControls() {
+    return Row(
+      key: const ValueKey('recording'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Bouton Annuler
+        GestureDetector(
+          onTap: _cancelRecording,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.grey[400],
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Icon(
+              Icons.close,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+        
+        const SizedBox(width: 8),
+        
+        // Indicateur d'enregistrement
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppTheme.errorColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppTheme.errorColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Enregistrement...',
+                style: TextStyle(
+                  color: AppTheme.errorColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(width: 8),
+        
+        // Bouton Envoyer
+        GestureDetector(
+          onTap: _stopRecording,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Icon(
+              Icons.send,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
