@@ -17,40 +17,44 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Message {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id", nullable = false)
     private Channel channel;
-    
+
     @Column(name = "sender_id", nullable = false)
     private String senderId;
-    
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
-    
+
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private MessageType type = MessageType.TEXT;
-    
+
     @Column(name = "reply_to_id")
     private Long replyToId;
-    
+
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "file_attachment_id")
+    private FileAttachment fileAttachment;
+
     @Builder.Default
     @Column(name = "is_edited")
     private Boolean isEdited = false;
-    
+
     @Builder.Default
     @Column(name = "is_deleted")
     private Boolean isDeleted = false;
-    
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    
+
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;

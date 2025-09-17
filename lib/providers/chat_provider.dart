@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import '../models/message_model.dart';
 import '../models/user_model.dart';
@@ -12,7 +14,7 @@ class ChatProvider with ChangeNotifier {
   final Map<int, List<Message>> _channelMessages = {};
   final Map<int, bool> _isLoadingMessages = {};
   final Map<String, bool> _typingUsers = {};
-  
+
   bool _isLoading = false;
   String? _error;
 
@@ -70,7 +72,7 @@ class ChatProvider with ChangeNotifier {
 
       // Subscribe to WebSocket for this channel
       _wsService.subscribeToChannel(channelId);
-      
+
     } catch (e) {
       _setError(e.toString());
     } finally {
@@ -89,7 +91,7 @@ class ChatProvider with ChangeNotifier {
       final uploadResult = await _apiService.uploadFile(file, type);
       final fileUrl = uploadResult['url'];
       final fileName = uploadResult['originalName'] ?? file.path.split('/').last;
-      
+
       // Send message with file URL
       await _sendMessageInternal(channelId, fileUrl, type, fileName: fileName, replyToId: replyToId);
     } catch (e) {
@@ -103,7 +105,7 @@ class ChatProvider with ChangeNotifier {
     // Utiliser l'email comme senderId pour être cohérent avec le backend
     final senderId = currentUser?.email ?? 'unknown';
     print('DEBUG: Sending message from user email: $senderId'); // Debug log
-    
+
     try {
       // Créer un message temporaire pour l'affichage immédiat
       final tempMessage = Message(
@@ -117,17 +119,17 @@ class ChatProvider with ChangeNotifier {
         isDeleted: false,
         createdAt: DateTime.now(),
       );
-      
+
       // Ajouter immédiatement le message à la liste locale
       final channelMessages = _channelMessages[channelId] ?? [];
       channelMessages.insert(0, tempMessage);
       _channelMessages[channelId] = channelMessages;
       notifyListeners();
-      
+
       // Send via WebSocket for real-time delivery
       final messageContent = fileName != null ? fileName : content;
       _wsService.sendMessage(channelId, content ?? '', type, replyToId: replyToId);
-      
+
       // Also send via REST API as backup
       await _apiService.sendMessage({
         'channelId': channelId,
@@ -143,7 +145,7 @@ class ChatProvider with ChangeNotifier {
   Future<void> editMessage(int messageId, String newContent) async {
     try {
       await _apiService.editMessage(messageId, newContent);
-      
+
       // Update local message
       for (final messages in _channelMessages.values) {
         final messageIndex = messages.indexWhere((m) => m.id == messageId);
@@ -173,7 +175,7 @@ class ChatProvider with ChangeNotifier {
   Future<void> deleteMessage(int messageId) async {
     try {
       await _apiService.deleteMessage(messageId);
-      
+
       // Update local message
       for (final messages in _channelMessages.values) {
         final messageIndex = messages.indexWhere((m) => m.id == messageId);
@@ -207,17 +209,17 @@ class ChatProvider with ChangeNotifier {
   void _handleNewMessage(Message message) {
     final currentUser = StorageService.getUser();
     print('DEBUG: Received message from: ${message.senderId}, current user ID: ${currentUser?.id}, current user email: ${currentUser?.email}'); // Debug log
-    
+
     final channelMessages = _channelMessages[message.channelId] ?? [];
-    
+
     // Remplacer le message temporaire s'il existe, sinon ajouter le nouveau
-    final tempMessageIndex = channelMessages.indexWhere((m) => 
-        m.content == message.content && 
+    final tempMessageIndex = channelMessages.indexWhere((m) =>
+    m.content == message.content &&
         (m.senderId == currentUser?.email || m.senderId == currentUser?.id) &&
         (message.senderId == currentUser?.email || message.senderId == currentUser?.id) &&
         m.createdAt.difference(message.createdAt).abs().inSeconds < 5
     );
-    
+
     if (tempMessageIndex != -1) {
       // Remplacer le message temporaire par le message réel
       channelMessages[tempMessageIndex] = message;
@@ -227,7 +229,7 @@ class ChatProvider with ChangeNotifier {
       channelMessages.insert(0, message);
       print('DEBUG: Added new message'); // Debug log
     }
-    
+
     _channelMessages[message.channelId] = channelMessages;
     notifyListeners();
   }
@@ -235,7 +237,7 @@ class ChatProvider with ChangeNotifier {
   void _handleTypingIndicator(String userId, String channelId, bool isTyping) {
     final key = '$channelId:$userId';
     _typingUsers[key] = isTyping;
-    
+
     // Remove typing indicator after 3 seconds
     if (isTyping) {
       Future.delayed(const Duration(seconds: 3), () {
@@ -243,7 +245,7 @@ class ChatProvider with ChangeNotifier {
         notifyListeners();
       });
     }
-    
+
     notifyListeners();
   }
 

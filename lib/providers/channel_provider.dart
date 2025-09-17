@@ -28,14 +28,14 @@ class ChannelProvider with ChangeNotifier {
       _channels = (response['content'] as List)
           .map((json) => Channel.fromJson(json))
           .toList();
-      
+
       // Sort channels by last activity
       _channels.sort((a, b) {
         final aTime = a.lastMessage?.createdAt ?? a.createdAt;
         final bTime = b.lastMessage?.createdAt ?? b.createdAt;
         return bTime.compareTo(aTime);
       });
-      
+
     } catch (e) {
       _setError(e.toString());
     } finally {
@@ -50,13 +50,13 @@ class ChannelProvider with ChangeNotifier {
     try {
       final response = await _apiService.getOrCreateDirectChannel(otherUserId);
       final channel = Channel.fromJson(response);
-      
+
       // Add to channels list if not exists
       if (!_channels.any((c) => c.id == channel.id)) {
         _channels.insert(0, channel);
         notifyListeners();
       }
-      
+
       return channel;
     } catch (e) {
       _setError(e.toString());
@@ -73,10 +73,10 @@ class ChannelProvider with ChangeNotifier {
     try {
       final response = await _apiService.createChannel(channelData);
       final channel = Channel.fromJson(response);
-      
+
       _channels.insert(0, channel);
       notifyListeners();
-      
+
       return channel;
     } catch (e) {
       _setError(e.toString());
@@ -94,12 +94,14 @@ class ChannelProvider with ChangeNotifier {
     try {
       final response = await _apiService.getBuildingResidents(buildingId);
       print('DEBUG: API response: $response');
-      // L'API retourne directement une liste, pas un objet avec 'content'
-      List<dynamic> residentsList = response as List<dynamic>;
-      
+
+      // Forcer à extraire la liste même si ApiService renvoie Map
+      final residentsList = (response as dynamic) as List<dynamic>;
+
       _buildingResidents = residentsList
           .map((json) => User.fromJson(json))
           .toList();
+
       print('DEBUG: Parsed ${_buildingResidents.length} residents');
     } catch (e) {
       print('DEBUG: Error loading residents: $e');
@@ -108,6 +110,7 @@ class ChannelProvider with ChangeNotifier {
       _setLoading(false);
     }
   }
+
 
   Channel? getChannelById(int channelId) {
     try {
@@ -147,13 +150,13 @@ class ChannelProvider with ChangeNotifier {
         memberCount: _channels[channelIndex].memberCount,
         lastMessage: lastMessage,
       );
-      
+
       _channels[channelIndex] = updatedChannel;
-      
+
       // Move to top of list
       _channels.removeAt(channelIndex);
       _channels.insert(0, updatedChannel);
-      
+
       notifyListeners();
     }
   }

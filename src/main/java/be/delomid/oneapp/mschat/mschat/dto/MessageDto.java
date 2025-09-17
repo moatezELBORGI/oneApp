@@ -1,7 +1,7 @@
 package be.delomid.oneapp.mschat.mschat.dto;
 
 import be.delomid.oneapp.mschat.mschat.model.MessageType;
- import lombok.Builder;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -15,6 +15,7 @@ public class MessageDto {
     private String content;
     private MessageType type;
     private Long replyToId;
+    private FileAttachmentDto fileAttachment;
     private Boolean isEdited;
     private Boolean isDeleted;
     private LocalDateTime createdAt;

@@ -38,7 +38,7 @@ class AuthProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.login(email, password);
-      
+
       if (response['otpRequired'] == true) {
         _setLoading(false);
         return true; // OTP required, proceed to OTP screen
@@ -106,7 +106,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> _handleLoginSuccess(Map<String, dynamic> response) async {
     final token = response['token'];
     final refreshToken = response['refreshToken'];
-    
+
     if (token != null) {
       await StorageService.saveToken(token);
     }
@@ -118,7 +118,7 @@ class AuthProvider with ChangeNotifier {
     _currentUserId = _user!.id;
     print('DEBUG: User logged in with ID: ${_user!.id}'); // Debug log
     await StorageService.saveUser(_user!);
-    
+
     await _connectWebSocket();
     notifyListeners();
   }

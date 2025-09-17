@@ -308,13 +308,13 @@ class _FilesScreenState extends State<FilesScreen> with SingleTickerProviderStat
             // Handle file actions
             switch (value) {
               case 'open':
-                // Open file
+              // Open file
                 break;
               case 'share':
-                // Share file
+              // Share file
                 break;
               case 'delete':
-                // Delete file
+              // Delete file
                 break;
             }
           },

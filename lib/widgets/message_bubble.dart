@@ -78,11 +78,11 @@ class MessageBubble extends StatelessWidget {
                         ),
                       ),
                     ),
-                  
+
                   _buildMessageContent(),
-                  
+
                   const SizedBox(height: 4),
-                  
+
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -198,7 +198,7 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildFileMessage() {
     final fileName = message.content.split('/').last.split('?').first;
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(

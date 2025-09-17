@@ -68,7 +68,7 @@ public class ChannelService {
 
     public Page<ChannelDto> getUserChannels(String userId, Pageable pageable) {
         log.debug("Getting channels for user: {}", userId);
-        
+
         Page<Channel> channels = channelRepository.findChannelsByUserId(userId, pageable);
         return channels.map(this::convertToDto);
     }
@@ -110,8 +110,10 @@ public class ChannelService {
 
     @Transactional
     public void leaveChannel(Long channelId, String userId) {
+        Optional<Resident> resident=residentRepository.findByEmail(userId);
+
         ChannelMember member = channelMemberRepository
-                .findByChannelIdAndUserId(channelId, userId)
+                .findByChannelIdAndUserId(channelId, resident.get().getIdUsers())
                 .orElseThrow(() -> new UnauthorizedAccessException("User is not a member of this channel"));
 
         member.setIsActive(false);
@@ -123,7 +125,7 @@ public class ChannelService {
 
     public Optional<ChannelDto> getOrCreateOneToOneChannel(String userId1, String userId2) {
         Optional<Channel> existingChannel = channelRepository.findOneToOneChannel(userId1, userId2);
-        
+
         if (existingChannel.isPresent()) {
             return Optional.of(convertToDto(existingChannel.get()));
         }
@@ -141,7 +143,7 @@ public class ChannelService {
     public List<ChannelDto> getBuildingChannels(String buildingId, String userId) {
         // Vérifier que l'utilisateur habite dans ce bâtiment
         validateUserBuildingAccess(userId, buildingId);
-        
+
         List<Channel> channels = channelRepository.findByTypeAndBuildingId(ChannelType.BUILDING, buildingId);
         return channels.stream()
                 .map(this::convertToDto)
@@ -151,7 +153,7 @@ public class ChannelService {
     public List<ResidentDto> getBuildingResidents(String buildingId, String userId) {
         // Vérifier que l'utilisateur habite dans ce bâtiment
         validateUserBuildingAccess(userId, buildingId);
-        
+
         List<Resident> residents = residentRepository.findByBuildingId(buildingId);
         return residents.stream()
                 .map(this::convertResidentToDto)
@@ -162,7 +164,7 @@ public class ChannelService {
     public ChannelDto createBuildingChannel(String buildingId, String createdBy) {
         // Vérifier que l'utilisateur habite dans ce bâtiment
         validateUserBuildingAccess(createdBy, buildingId);
-        
+
         // Vérifier qu'il n'existe pas déjà un canal pour ce bâtiment
         List<Channel> existingChannel = channelRepository.findByTypeAndBuildingId(ChannelType.BUILDING, buildingId);
         if (!existingChannel.isEmpty() && existingChannel.get(0).getIsActive() == true) {
@@ -177,11 +179,11 @@ public class ChannelService {
         request.setIsPrivate(false);
 
         ChannelDto channel = createChannel(request, createdBy);
-        
+
         // Ajouter automatiquement tous les résidents du bâtiment
         List<Resident> residents = residentRepository.findByBuildingId(buildingId);
         Channel channelEntity = channelRepository.findById(channel.getId()).get();
-        
+
         for (Resident resident : residents) {
             if (!resident.getIdUsers().equals(createdBy)) {
                 addChannelMember(channelEntity, String.valueOf(resident.getIdUsers()), MemberRole.MEMBER);
@@ -195,31 +197,31 @@ public class ChannelService {
         // Récupérer l'utilisateur d'abord
         Resident user = residentRepository.findById(userId)
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
-        
+
         // Vérifier par l'appartement
         Optional<Apartment> userApartment = apartmentRepository.findByResidentIdUsers(userId);
         if (userApartment.isPresent() && userApartment.get().getBuilding().getBuildingId().equals(buildingId)) {
             return; // Utilisateur trouvé via appartement
         }
-        
+
         // Vérifier par email (fallback)
         Optional<Apartment> apartmentByEmail = apartmentRepository.findByResidentEmail(user.getEmail());
         if (apartmentByEmail.isPresent() && apartmentByEmail.get().getBuilding().getBuildingId().equals(buildingId)) {
             return; // Utilisateur trouvé via email
         }
-        
+
         // Si admin du bâtiment, autoriser l'accès
         if (user.getRole() == UserRole.BUILDING_ADMIN && buildingId.equals(user.getManagedBuildingId())) {
             return;
         }
-        
+
         // Si super admin, autoriser l'accès
         if (user.getRole() == UserRole.SUPER_ADMIN) {
             return;
         }
-        
-        log.debug("Access denied for user {} to building {}. User apartment: {}, User email: {}", 
-                 userId, buildingId, userApartment.map(a -> a.getIdApartment()).orElse("none"), user.getEmail());
+
+        log.debug("Access denied for user {} to building {}. User apartment: {}, User email: {}",
+                userId, buildingId, userApartment.map(a -> a.getIdApartment()).orElse("none"), user.getEmail());
         throw new UnauthorizedAccessException("User does not live in this building");
     }
 
@@ -253,9 +255,11 @@ public class ChannelService {
     }
 
     private void validateChannelAccess(Channel channel, String userId) {
+        Optional<Resident> user=residentRepository.findByEmail(userId);
+
         Optional<ChannelMember> member = channelMemberRepository
-                .findByChannelIdAndUserId(channel.getId(), userId);
-        
+                .findByChannelIdAndUserId(channel.getId(), user.get().getIdUsers());
+
         if (member.isEmpty() || !member.get().getIsActive()) {
             throw new UnauthorizedAccessException("User does not have access to this channel");
         }
@@ -267,14 +271,14 @@ public class ChannelService {
                 .userId(userId)
                 .role(role)
                 .build();
-        
+
         channelMemberRepository.save(member);
         log.debug("Added user {} as {} to channel {}", userId, role, channel.getId());
     }
 
     private ChannelDto convertToDto(Channel channel) {
         Long memberCount = channelMemberRepository.countActiveByChannelId(channel.getId());
-        
+
         return ChannelDto.builder()
                 .id(channel.getId())
                 .name(channel.getName())

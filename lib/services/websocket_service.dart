@@ -14,7 +14,7 @@ class WebSocketService {
   StompClient? _stompClient;
   bool _isConnected = false;
   final Map<int, void Function()> _subscriptions = {};
-  
+
   // Callbacks
   Function(Message)? onMessageReceived;
   Function(String, String, bool)? onTypingReceived;
@@ -160,7 +160,7 @@ class WebSocketService {
       unsubscribe();
     }
     _subscriptions.clear();
-    
+
     if (_stompClient != null) {
       _stompClient!.deactivate();
       _stompClient = null;

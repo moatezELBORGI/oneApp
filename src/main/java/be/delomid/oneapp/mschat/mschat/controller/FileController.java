@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/files")
+@RequestMapping("/files")
 @RequiredArgsConstructor
 @Slf4j
 public class FileController {
@@ -23,7 +23,7 @@ public class FileController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("type") String type,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         Map<String, Object> result = fileService.uploadFile(file, type, userId);
         return ResponseEntity.ok(result);
@@ -38,7 +38,7 @@ public class FileController {
     public ResponseEntity<Void> deleteFile(
             @PathVariable String fileId,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         fileService.deleteFile(fileId, userId);
         return ResponseEntity.ok().build();

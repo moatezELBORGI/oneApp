@@ -28,9 +28,9 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
   void _loadBuildingResidents() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    
+
     print('DEBUG: Loading residents for building: ${authProvider.user?.buildingId}');
-    
+
     if (authProvider.user?.buildingId != null) {
       await channelProvider.loadBuildingResidents(authProvider.user!.buildingId!);
       print('DEBUG: Loaded ${channelProvider.buildingResidents.length} residents');
@@ -48,7 +48,7 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
   void _filterResidents(String query) {
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     setState(() {
       if (query.isEmpty) {
         _filteredResidents = channelProvider.buildingResidents
@@ -56,9 +56,9 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
             .toList();
       } else {
         _filteredResidents = channelProvider.buildingResidents
-            .where((resident) => 
-                resident.id != authProvider.user?.id &&
-                resident.fullName.toLowerCase().contains(query.toLowerCase()))
+            .where((resident) =>
+        resident.id != authProvider.user?.id &&
+            resident.fullName.toLowerCase().contains(query.toLowerCase()))
             .toList();
       }
     });
@@ -66,9 +66,9 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
 
   void _startDiscussion(User resident) async {
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    
+
     final channel = await channelProvider.getOrCreateDirectChannel(resident.id);
-    
+
     if (channel != null && mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -113,7 +113,7 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
               onChanged: _filterResidents,
             ),
           ),
-          
+
           // Residents List
           Expanded(
             child: Consumer<ChannelProvider>(
@@ -121,7 +121,7 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
                 if (channelProvider.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                
+
                 if (channelProvider.error != null) {
                   return Center(
                     child: Column(
@@ -197,30 +197,30 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
         backgroundColor: AppTheme.primaryColor,
         child: resident.picture != null
             ? ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.network(
-                  resident.picture!,
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Text(
-                      resident.initials,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    );
-                  },
-                ),
-              )
-            : Text(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.network(
+            resident.picture!,
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Text(
                 resident.initials,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
+              );
+            },
+          ),
+        )
+            : Text(
+          resident.initials,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       title: Text(
         resident.fullName,

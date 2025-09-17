@@ -38,7 +38,6 @@ class CustomButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           disabledBackgroundColor: Colors.grey[300],
-          disabledForegroundColor: Colors.grey[600],
         ),
         child: isLoading
             ? const SizedBox(

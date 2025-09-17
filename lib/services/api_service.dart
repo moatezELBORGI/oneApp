@@ -156,9 +156,9 @@ class ApiService {
   }
 
   // Residents endpoints
-  Future<Map<String, dynamic>> getBuildingResidents(String buildingId) async {
+  Future<List<dynamic>> getBuildingResidents(String buildingId) async {
     print('DEBUG: Making API call to: $baseUrl/channels/building/$buildingId/residents');
-    
+
     final response = await http.get(
       Uri.parse('$baseUrl/channels/building/$buildingId/residents'),
       headers: await _getHeaders(),
@@ -166,7 +166,8 @@ class ApiService {
 
     print('DEBUG: API response status: ${response.statusCode}');
     print('DEBUG: API response body: ${response.body}');
-    return _handleResponse(response);
+
+    return _handleListResponse(response);
   }
 
   // File upload
@@ -174,11 +175,11 @@ class ApiService {
     try {
       final uri = Uri.parse('$baseUrl/files/upload');
       final request = http.MultipartRequest('POST', uri);
-      
+
       // Add headers
       final headers = await _getHeaders();
       request.headers.addAll(headers);
-      
+
       // Add file
       final mimeType = lookupMimeType(file.path);
       final multipartFile = await http.MultipartFile.fromPath(
@@ -187,22 +188,34 @@ class ApiService {
         contentType: mimeType != null ? MediaType.parse(mimeType) : null,
       );
       request.files.add(multipartFile);
-      
+
       // Add type parameter
       request.fields['type'] = type;
-      
+
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
-      
+
       return _handleResponse(response);
     } catch (e) {
       throw ApiException(message: 'Failed to upload file: $e', statusCode: 500);
     }
   }
-
+// 🔥 version spécifique pour les réponses "List"
+  List<dynamic> _handleListResponse(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is List) {
+        return decoded;
+      } else {
+        throw Exception('Expected List but got ${decoded.runtimeType}');
+      }
+    } else {
+      throw Exception('Failed request: ${response.statusCode} - ${response.body}');
+    }
+  }
   Map<String, dynamic> _handleResponse(http.Response response) {
     final data = jsonDecode(response.body);
-    
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return data;
     } else {

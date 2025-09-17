@@ -111,7 +111,7 @@ class _OtpScreenState extends State<OtpScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
-              
+
               // Icon
               Center(
                 child: Container(
@@ -128,9 +128,9 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 30),
-              
+
               // Title and Description
               const Text(
                 'Code de vérification',
@@ -141,9 +141,9 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               Text(
                 'Nous avons envoyé un code de vérification à\n${widget.email}',
                 style: const TextStyle(
@@ -152,9 +152,9 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // OTP Input Fields
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -194,9 +194,9 @@ class _OtpScreenState extends State<OtpScreen> {
                   );
                 }),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Verify Button
               Consumer<AuthProvider>(
                 builder: (context, authProvider, child) {
@@ -207,7 +207,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   );
                 },
               ),
-              
+
               // Error Message
               Consumer<AuthProvider>(
                 builder: (context, authProvider, child) {
@@ -232,9 +232,9 @@ class _OtpScreenState extends State<OtpScreen> {
                   return const SizedBox.shrink();
                 },
               ),
-              
+
               const SizedBox(height: 30),
-              
+
               // Resend Code
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

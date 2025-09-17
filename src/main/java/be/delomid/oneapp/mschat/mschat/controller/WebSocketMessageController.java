@@ -1,9 +1,9 @@
 package be.delomid.oneapp.mschat.mschat.controller;
 
- import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
- import be.delomid.oneapp.mschat.mschat.dto.SendMessageRequest;
- import be.delomid.oneapp.mschat.mschat.service.MessageService;
- import lombok.RequiredArgsConstructor;
+import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
+import be.delomid.oneapp.mschat.mschat.dto.SendMessageRequest;
+import be.delomid.oneapp.mschat.mschat.service.MessageService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -23,33 +23,40 @@ public class WebSocketMessageController {
 
     @MessageMapping("/message.send")
     public void sendMessage(@Payload SendMessageRequest request,
-                          SimpMessageHeaderAccessor headerAccessor,
-                          Principal principal) {
-        
+                            SimpMessageHeaderAccessor headerAccessor,
+                            Principal principal) {
+
         try {
             // Récupérer l'ID utilisateur du JWT
             String userId = principal.getName();
-            
+
+            // Validation pour les messages avec fichiers
+            if (request.getFileAttachmentId() != null &&
+                    (request.getContent() == null || request.getContent().trim().isEmpty())) {
+                // Pour les fichiers, le contenu peut être vide
+                log.debug("Sending file message to channel {}", request.getChannelId());
+            }
+
             // Envoyer le message via le service
             MessageDto message = messageService.sendMessage(request, userId);
-            
+
             // Diffuser le message à tous les membres du canal
             messagingTemplate.convertAndSend(
-                "/topic/channel/" + request.getChannelId(),
-                message
+                    "/topic/channel/" + request.getChannelId(),
+                    message
             );
-            
-            log.debug("Message sent via WebSocket: channelId={}, userId={}", 
-                     request.getChannelId(), userId);
-            
+
+            log.debug("Message sent via WebSocket: channelId={}, userId={}",
+                    request.getChannelId(), userId, request.getType());
+
         } catch (Exception e) {
             log.error("Error sending message via WebSocket", e);
-            
+
             // Envoyer une erreur à l'utilisateur
             messagingTemplate.convertAndSendToUser(
-                principal.getName(),
-                "/queue/errors",
-                "Error sending message: " + e.getMessage()
+                    principal.getName(),
+                    "/queue/errors",
+                    "Error sending message: " + e.getMessage()
             );
         }
     }
@@ -58,10 +65,10 @@ public class WebSocketMessageController {
     public void handleTyping(@Payload TypingEvent typingEvent, Principal principal) {
         // Diffuser l'événement "en train d'écrire" aux autres membres du canal
         typingEvent.setUserId(principal.getName());
-        
+
         messagingTemplate.convertAndSend(
-            "/topic/channel/" + typingEvent.getChannelId() + "/typing",
-            typingEvent
+                "/topic/channel/" + typingEvent.getChannelId() + "/typing",
+                typingEvent
         );
     }
 

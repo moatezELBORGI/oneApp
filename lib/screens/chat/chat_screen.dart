@@ -59,12 +59,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     final isCurrentlyTyping = _messageController.text.isNotEmpty;
     final hasText = _messageController.text.trim().isNotEmpty;
-    
+
     if (isCurrentlyTyping != _isTyping) {
       _isTyping = isCurrentlyTyping;
       chatProvider.sendTypingIndicator(widget.channel.id, _isTyping);
     }
-   
+
     if (hasText != _hasText) {
       setState(() {
         _hasText = hasText;
@@ -79,12 +79,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     chatProvider.sendMessage(widget.channel.id, content.trim(), type);
-    
+
     _messageController.clear();
     setState(() {
       _hasText = false;
     });
-    
+
     // Scroll to bottom après un petit délai
     Future.delayed(const Duration(milliseconds: 100), () {
       _scrollToBottom();
@@ -106,7 +106,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _pickImage() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
-    
+
     if (image != null) {
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
       await chatProvider.sendMessageWithFile(
@@ -120,7 +120,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _takePhoto() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.camera);
-    
+
     if (image != null) {
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
       await chatProvider.sendMessageWithFile(
@@ -133,7 +133,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _pickFile() async {
     final result = await FilePicker.platform.pickFiles();
-    
+
     if (result != null && result.files.single.path != null) {
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
       await chatProvider.sendMessageWithFile(
@@ -146,19 +146,19 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _startRecording() async {
     final audioService = AudioService();
-    
+
     setState(() {
       _isRecording = true;
     });
-    
+
     try {
       final audioPath = await audioService.startRecording();
       if (audioPath != null) {
         // Wait for user to stop recording (you might want to add a stop button)
         await Future.delayed(const Duration(seconds: 3)); // Example duration
-        
+
         await audioService.stopRecording();
-        
+
         // Send audio file
         final chatProvider = Provider.of<ChatProvider>(context, listen: false);
         await chatProvider.sendMessageWithFile(
@@ -172,7 +172,7 @@ class _ChatScreenState extends State<ChatScreen> {
         SnackBar(content: Text('Erreur lors de l\'enregistrement: $e')),
       );
     }
-    
+
     setState(() {
       _isRecording = false;
     });
@@ -233,7 +233,7 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (context, chatProvider, child) {
         final messages = chatProvider.getChannelMessages(widget.channel.id);
         final typingUsers = chatProvider.getTypingUsers(widget.channel.id);
-        
+
         if (chatProvider.isLoadingMessages(widget.channel.id)) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -251,12 +251,12 @@ class _ChatScreenState extends State<ChatScreen> {
             if (index == 0 && typingUsers.isNotEmpty) {
               return TypingIndicator(users: typingUsers);
             }
-            
+
             final messageIndex = typingUsers.isNotEmpty ? index - 1 : index;
             final message = messages[messageIndex];
             final currentUser = Provider.of<AuthProvider>(context, listen: false).user;
             final isMe = message.senderId == currentUser?.id || message.senderId == currentUser?.email;
-            
+
             return MessageBubble(
               message: message,
               isMe: isMe,
@@ -397,8 +397,8 @@ class _ChatScreenState extends State<ChatScreen> {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: _isRecording 
-              ? AppTheme.errorColor 
+          color: _isRecording
+              ? AppTheme.errorColor
               : Colors.grey[400],
           borderRadius: BorderRadius.circular(24),
         ),

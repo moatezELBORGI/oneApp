@@ -110,7 +110,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
         }
 
         final channels = channelProvider.channels;
-        
+
         if (channels.isEmpty) {
           return Center(
             child: Column(
@@ -154,7 +154,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
     return Consumer<ChannelProvider>(
       builder: (context, channelProvider, child) {
         final groupChannels = channelProvider.getGroupChannels();
-        
+
         if (groupChannels.isEmpty) {
           return Center(
             child: Column(
@@ -189,7 +189,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
     return Consumer<ChannelProvider>(
       builder: (context, channelProvider, child) {
         final buildingChannels = channelProvider.getBuildingChannels();
-        
+
         if (buildingChannels.isEmpty) {
           return Center(
             child: Column(
@@ -276,12 +276,12 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
         ),
         trailing: channel.lastMessage != null
             ? Text(
-                _formatTime(channel.lastMessage!.createdAt),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                ),
-              )
+          _formatTime(channel.lastMessage!.createdAt),
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppTheme.textSecondary,
+          ),
+        )
             : null,
         onTap: () {
           Navigator.of(context).push(

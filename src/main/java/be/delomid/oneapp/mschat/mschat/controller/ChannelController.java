@@ -31,7 +31,7 @@ public class ChannelController {
     public ResponseEntity<ChannelDto> createChannel(
             @Valid @RequestBody CreateChannelRequest request,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         ChannelDto channel = channelService.createChannel(request, userId);
         return ResponseEntity.ok(channel);
@@ -41,7 +41,7 @@ public class ChannelController {
     public ResponseEntity<Page<ChannelDto>> getUserChannels(
             Authentication authentication,
             Pageable pageable) {
-        
+
         String userId = getUserId(authentication);
         Page<ChannelDto> channels = channelService.getUserChannels(userId, pageable);
         return ResponseEntity.ok(channels);
@@ -51,7 +51,7 @@ public class ChannelController {
     public ResponseEntity<ChannelDto> getChannel(
             @PathVariable Long channelId,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         ChannelDto channel = channelService.getChannelById(channelId, userId);
         return ResponseEntity.ok(channel);
@@ -61,7 +61,7 @@ public class ChannelController {
     public ResponseEntity<ChannelDto> joinChannel(
             @PathVariable Long channelId,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         ChannelDto channel = channelService.joinChannel(channelId, userId);
         return ResponseEntity.ok(channel);
@@ -71,7 +71,7 @@ public class ChannelController {
     public ResponseEntity<Void> leaveChannel(
             @PathVariable Long channelId,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         channelService.leaveChannel(channelId, userId);
         return ResponseEntity.ok().build();
@@ -81,19 +81,19 @@ public class ChannelController {
     public ResponseEntity<ChannelDto> getOrCreateDirectChannel(
             @PathVariable String otherUserId,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         Optional<ChannelDto> channel = channelService.getOrCreateOneToOneChannel(userId, otherUserId);
-        
+
         return channel.map(ResponseEntity::ok)
-                     .orElse(ResponseEntity.notFound().build());
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/building/{buildingId}")
     public ResponseEntity<List<ChannelDto>> getBuildingChannels(
             @PathVariable String buildingId,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         List<ChannelDto> channels = channelService.getBuildingChannels(buildingId, userId);
         return ResponseEntity.ok(channels);
@@ -103,7 +103,7 @@ public class ChannelController {
     public ResponseEntity<List<ResidentDto>> getBuildingResidents(
             @PathVariable String buildingId,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         List<ResidentDto> residents = channelService.getBuildingResidents(buildingId, userId);
         return ResponseEntity.ok(residents);
@@ -113,7 +113,7 @@ public class ChannelController {
     public ResponseEntity<ChannelDto> createBuildingChannel(
             @PathVariable String buildingId,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         ChannelDto channel = channelService.createBuildingChannel(buildingId, userId);
         return ResponseEntity.ok(channel);

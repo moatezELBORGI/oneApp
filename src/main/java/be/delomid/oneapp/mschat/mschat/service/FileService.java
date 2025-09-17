@@ -31,7 +31,7 @@ public class FileService {
 
     public Map<String, Object> uploadFile(MultipartFile file, String type, String userId) {
         validateFile(file, type);
-        
+
         try {
             // Créer le répertoire s'il n'existe pas
             Path uploadPath = Paths.get(uploadDir);
@@ -43,11 +43,11 @@ public class FileService {
             String originalFilename = file.getOriginalFilename();
             String extension = getFileExtension(originalFilename);
             String filename = UUID.randomUUID().toString() + extension;
-            
+
             // Sauvegarder le fichier
             Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-            
+
             // Construire la réponse
             Map<String, Object> response = new HashMap<>();
             response.put("fileId", filename);
@@ -57,10 +57,10 @@ public class FileService {
             response.put("mimeType", file.getContentType());
             response.put("url", "/api/v1/files/" + filename);
             response.put("uploadedBy", userId);
-            
+
             log.info("File uploaded successfully: {} by user: {}", filename, userId);
             return response;
-            
+
         } catch (IOException e) {
             log.error("Error uploading file", e);
             throw new RuntimeException("Failed to upload file", e);
@@ -70,23 +70,23 @@ public class FileService {
     public ResponseEntity<byte[]> getFile(String fileId) {
         try {
             Path filePath = Paths.get(uploadDir).resolve(fileId);
-            
+
             if (!Files.exists(filePath)) {
                 return ResponseEntity.notFound().build();
             }
-            
+
             byte[] fileContent = Files.readAllBytes(filePath);
             String contentType = Files.probeContentType(filePath);
-            
+
             if (contentType == null) {
                 contentType = "application/octet-stream";
             }
-            
+
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileId + "\"")
                     .contentType(MediaType.parseMediaType(contentType))
                     .body(fileContent);
-                    
+
         } catch (IOException e) {
             log.error("Error retrieving file: {}", fileId, e);
             return ResponseEntity.internalServerError().build();
@@ -96,12 +96,12 @@ public class FileService {
     public void deleteFile(String fileId, String userId) {
         try {
             Path filePath = Paths.get(uploadDir).resolve(fileId);
-            
+
             if (Files.exists(filePath)) {
                 Files.delete(filePath);
                 log.info("File deleted: {} by user: {}", fileId, userId);
             }
-            
+
         } catch (IOException e) {
             log.error("Error deleting file: {}", fileId, e);
             throw new RuntimeException("Failed to delete file", e);
@@ -112,16 +112,16 @@ public class FileService {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");
         }
-        
+
         if (file.getSize() > maxFileSize) {
             throw new IllegalArgumentException("File size exceeds maximum allowed size");
         }
-        
+
         String contentType = file.getContentType();
         if (contentType == null) {
             throw new IllegalArgumentException("Invalid file type");
         }
-        
+
         // Validation selon le type
         switch (type.toUpperCase()) {
             case "IMAGE":

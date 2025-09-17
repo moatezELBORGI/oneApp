@@ -1,3 +1,5 @@
+import 'package:mgi/models/message_model.dart';
+
 class Channel {
   final int id;
   final String name;

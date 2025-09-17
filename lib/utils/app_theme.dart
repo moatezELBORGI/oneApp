@@ -10,18 +10,18 @@ class AppTheme {
   static const Color errorColor = Color(0xFFE53E3E);
   static const Color successColor = Color(0xFF38A169);
   static const Color warningColor = Color(0xFFD69E2E);
-  
+
   // Text Colors
   static const Color textPrimary = Color(0xFF2D3748);
   static const Color textSecondary = Color(0xFF718096);
   static const Color textLight = Color(0xFFA0AEC0);
-  
+
   // Chat Colors
   static const Color myMessageColor = Color(0xFF2196F3);
   static const Color otherMessageColor = Color(0xFFE2E8F0);
   static const Color onlineColor = Color(0xFF38A169);
   static const Color offlineColor = Color(0xFFE53E3E);
-  
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -30,7 +30,7 @@ class AppTheme {
         brightness: Brightness.light,
       ),
       fontFamily: 'Poppins',
-      
+
       // AppBar Theme
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
@@ -44,7 +44,7 @@ class AppTheme {
           color: textPrimary,
         ),
       ),
-      
+
       // Bottom Navigation Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
@@ -63,7 +63,7 @@ class AppTheme {
           fontWeight: FontWeight.w400,
         ),
       ),
-      
+
       // Card Theme
       cardTheme: CardThemeData(
         color: surfaceColor,
@@ -72,7 +72,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      
+
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -99,7 +99,7 @@ class AppTheme {
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
-      
+
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -117,7 +117,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(

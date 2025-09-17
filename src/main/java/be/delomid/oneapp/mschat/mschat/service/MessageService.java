@@ -3,14 +3,11 @@ package be.delomid.oneapp.mschat.mschat.service;
 
 import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
 import be.delomid.oneapp.mschat.mschat.dto.SendMessageRequest;
+import be.delomid.oneapp.mschat.mschat.dto.FileAttachmentDto;
 import be.delomid.oneapp.mschat.mschat.exception.ChannelNotFoundException;
 import be.delomid.oneapp.mschat.mschat.exception.UnauthorizedAccessException;
-import be.delomid.oneapp.mschat.mschat.model.Channel;
-import be.delomid.oneapp.mschat.mschat.model.ChannelMember;
-import be.delomid.oneapp.mschat.mschat.model.Message;
-import be.delomid.oneapp.mschat.mschat.repository.ChannelMemberRepository;
-import be.delomid.oneapp.mschat.mschat.repository.ChannelRepository;
-import be.delomid.oneapp.mschat.mschat.repository.MessageRepository;
+import be.delomid.oneapp.mschat.mschat.model.*;
+import be.delomid.oneapp.mschat.mschat.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,6 +25,8 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
+    private final ResidentRepository residentRepository;
+    private final FileAttachmentRepository fileAttachmentRepository;
 
     @Transactional
     public MessageDto sendMessage(SendMessageRequest request, String senderId) {
@@ -40,12 +39,34 @@ public class MessageService {
         // Vérifier que l'utilisateur est membre du canal et peut écrire
         validateWriteAccess(request.getChannelId(), senderId);
 
+        // Récupérer le fichier attaché si présent
+        FileAttachment fileAttachment = null;
+        if (request.getFileAttachmentId() != null) {
+            fileAttachment = fileAttachmentRepository.findById(request.getFileAttachmentId())
+                    .orElseThrow(() -> new IllegalArgumentException("File attachment not found: " + request.getFileAttachmentId()));
+
+            // Vérifier que l'utilisateur est le propriétaire du fichier
+            if (!fileAttachment.getUploadedBy().equals(senderId)) {
+                throw new IllegalArgumentException("User does not own this file attachment");
+            }
+        }
+
+        // Pour les messages avec fichiers, le contenu peut être vide
+        String content = request.getContent();
+        if (content == null || content.trim().isEmpty()) {
+            if (fileAttachment != null) {
+                content = fileAttachment.getOriginalFilename();
+            } else {
+                throw new IllegalArgumentException("Message content or file attachment is required");
+            }
+        }
         Message message = Message.builder()
                 .channel(channel)
                 .senderId(senderId)
-                .content(request.getContent())
+                .content(content)
                 .type(request.getType())
                 .replyToId(request.getReplyToId())
+                .fileAttachment(fileAttachment)
                 .build();
 
         message = messageRepository.save(message);
@@ -99,17 +120,21 @@ public class MessageService {
     }
 
     private void validateChannelAccess(Long channelId, String userId) {
+        Optional<Resident> resident=residentRepository.findByEmail(userId);
+
         Optional<ChannelMember> member = channelMemberRepository
-                .findByChannelIdAndUserId(channelId, userId);
-        
+                .findByChannelIdAndUserId(channelId, resident.get().getIdUsers());
+
         if (member.isEmpty() || !member.get().getIsActive()) {
             throw new UnauthorizedAccessException("User does not have access to this channel");
         }
     }
 
     private void validateWriteAccess(Long channelId, String userId) {
+        log.info("userid mn message service:"+userId);
+        Optional<Resident> resident=residentRepository.findByEmail(userId);
         ChannelMember member = channelMemberRepository
-                .findByChannelIdAndUserId(channelId, userId)
+                .findByChannelIdAndUserId(channelId, resident.get().getIdUsers())
                 .orElseThrow(() -> new UnauthorizedAccessException("User is not a member of this channel"));
 
         if (!member.getIsActive() || !member.getCanWrite()) {
@@ -124,6 +149,29 @@ public class MessageService {
     }
 
     private MessageDto convertToDto(Message message) {
+        FileAttachmentDto fileAttachmentDto = null;
+        if (message.getFileAttachment() != null) {
+            FileAttachment file = message.getFileAttachment();
+            String baseUrl = "http://localhost:9090/api/v1/files/";
+
+            fileAttachmentDto = FileAttachmentDto.builder()
+                    .id(file.getId())
+                    .originalFilename(file.getOriginalFilename())
+                    .storedFilename(file.getStoredFilename())
+                    .filePath(file.getFilePath())
+                    .downloadUrl(baseUrl + "download/" + file.getFilePath())
+                    .fileSize(file.getFileSize())
+                    .mimeType(file.getMimeType())
+                    .fileType(file.getFileType())
+                    .uploadedBy(file.getUploadedBy())
+                    .duration(file.getDuration())
+                    .thumbnailPath(file.getThumbnailPath())
+                    .thumbnailUrl(file.getThumbnailPath() != null ?
+                            baseUrl + "view/" + file.getThumbnailPath() : null)
+                    .createdAt(file.getCreatedAt())
+                    .build();
+        }
+
         return MessageDto.builder()
                 .id(message.getId())
                 .channelId(message.getChannel().getId())
@@ -131,6 +179,7 @@ public class MessageService {
                 .content(message.getContent())
                 .type(message.getType())
                 .replyToId(message.getReplyToId())
+                .fileAttachment(fileAttachmentDto)
                 .isEdited(message.getIsEdited())
                 .isDeleted(message.getIsDeleted())
                 .createdAt(message.getCreatedAt())

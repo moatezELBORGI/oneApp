@@ -78,7 +78,7 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
           }
 
           final directChannels = channelProvider.getDirectChannels();
-          
+
           if (directChannels.isEmpty) {
             return Center(
               child: Column(
@@ -162,20 +162,20 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
         ),
         subtitle: channel.lastMessage != null
             ? Text(
-                channel.lastMessage!.content,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                ),
-              )
+          channel.lastMessage!.content,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.grey[600],
+          ),
+        )
             : Text(
-                'Aucun message',
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+          'Aucun message',
+          style: TextStyle(
+            color: Colors.grey[500],
+            fontStyle: FontStyle.italic,
+          ),
+        ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,

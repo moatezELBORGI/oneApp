@@ -93,7 +93,7 @@ public class DataInitializationService implements CommandLineRunner {
         // Créer un immeuble de test
         if (buildingRepository.count() == 0) {
             log.info("Creating test building and residents...");
-            
+
             Country france = countryRepository.findByCodeIso3("FRA");
             if (france == null) {
                 france = countryRepository.findAll().get(0); // Prendre le premier pays disponible
@@ -151,9 +151,9 @@ public class DataInitializationService implements CommandLineRunner {
             // Créer des résidents de test
             Resident resident1 = Resident.builder()
                     .idUsers(UUID.randomUUID().toString())
-                    .fname("Alice")
-                    .lname("Martin")
-                    .email("alice.martin@test.com")
+                    .fname("Moatez")
+                    .lname("BORGI")
+                    .email("moatezelborgi@gmail.com")
                     .password(passwordEncoder.encode("password123"))
                     .phoneNumber("+33123456789")
                     .role(UserRole.RESIDENT)
@@ -166,18 +166,18 @@ public class DataInitializationService implements CommandLineRunner {
 
             Resident resident2 = Resident.builder()
                     .idUsers(UUID.randomUUID().toString())
-                    .fname("Bob")
-                    .lname("Dupont")
-                    .email("bob.dupont@test.com")
+                    .fname("Test")
+                    .lname("Test")
+                    .email("moatezborgi@softverse.com")
                     .password(passwordEncoder.encode("password123"))
                     .phoneNumber("+33987654321")
                     .role(UserRole.RESIDENT)
                     .accountStatus(AccountStatus.ACTIVE)
                     .isEnabled(true)
                     .isAccountNonExpired(true)
-                    .isAccountNonLocked(true)
+                    .isAccountNonLocked(true).build();
             resident1 = residentRepository.save(resident1);
-            
+
             resident2 = residentRepository.save(resident2);
 
             // Assigner les résidents aux appartements
@@ -188,9 +188,9 @@ public class DataInitializationService implements CommandLineRunner {
 
             log.info("Test data created:");
             log.info("- Building: {} (ID: {})", testBuilding.getBuildingLabel(), testBuilding.getBuildingId());
-            log.info("- Resident 1: {} {} - Email: {} - Apartment: {}", 
+            log.info("- Resident 1: {} {} - Email: {} - Apartment: {}",
                     resident1.getFname(), resident1.getLname(), resident1.getEmail(), apartment1.getApartmentNumber());
-            log.info("- Resident 2: {} {} - Email: {} - Apartment: {}", 
+            log.info("- Resident 2: {} {} - Email: {} - Apartment: {}",
                     resident2.getFname(), resident2.getLname(), resident2.getEmail(), apartment2.getApartmentNumber());
             log.info("Password for both test residents: password123");
         }
