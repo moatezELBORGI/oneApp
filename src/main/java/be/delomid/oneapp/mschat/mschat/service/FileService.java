@@ -68,6 +68,10 @@ public class FileService {
     }
 
     public ResponseEntity<byte[]> getFile(String fileId) {
+        return viewFile(fileId);
+    }
+    
+    public ResponseEntity<byte[]> viewFile(String fileId) {
         try {
             Path filePath = Paths.get(uploadDir).resolve(fileId);
 
@@ -89,6 +93,32 @@ public class FileService {
 
         } catch (IOException e) {
             log.error("Error retrieving file: {}", fileId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    public ResponseEntity<byte[]> downloadFile(String fileId) {
+        try {
+            Path filePath = Paths.get(uploadDir).resolve(fileId);
+
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            byte[] fileContent = Files.readAllBytes(filePath);
+            String contentType = Files.probeContentType(filePath);
+
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileId + "\"")
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(fileContent);
+
+        } catch (IOException e) {
+            log.error("Error downloading file: {}", fileId, e);
             return ResponseEntity.internalServerError().build();
         }
     }

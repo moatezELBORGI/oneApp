@@ -70,7 +70,7 @@ public class ChannelService {
         log.debug("Getting channels for user: {}", userId);
 
         Page<Channel> channels = channelRepository.findChannelsByUserId(userId, pageable);
-        return channels.map(this::convertToDto);
+        return channels.map(channel -> convertToDto(channel, userId));
     }
 
     public ChannelDto getChannelById(Long channelId, String userId) {
@@ -80,7 +80,7 @@ public class ChannelService {
         // Vérifier que l'utilisateur est membre du canal
         validateChannelAccess(channel, userId);
 
-        return convertToDto(channel);
+        return convertToDto(channel, userId);
     }
 
     @Transactional
