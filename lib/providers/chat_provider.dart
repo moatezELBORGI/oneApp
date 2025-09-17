@@ -89,17 +89,22 @@ class ChatProvider with ChangeNotifier {
     try {
       // Upload file first
       final uploadResult = await _apiService.uploadFile(file, type);
-      final fileUrl = uploadResult['url'];
+      String fileUrl = uploadResult['url'];
       final fileName = uploadResult['originalName'] ?? file.path.split('/').last;
 
+      // For images, ensure the URL has the correct prefix
+      if (type == 'IMAGE' && !fileUrl.startsWith('http')) {
+        fileUrl = 'http://192.168.1.5:9090/api/v1/files/$fileUrl';
+      }
+
       // Send message with file URL
-      await _sendMessageInternal(channelId, fileUrl, type, fileName: fileName, replyToId: replyToId);
+      await _sendMessageInternal(channelId, fileUrl, type, replyToId: replyToId);
     } catch (e) {
       _setError(e.toString());
     }
   }
 
-  Future<void> _sendMessageInternal(int channelId, String content, String type, {String? fileName, int? replyToId}) async {
+  Future<void> _sendMessageInternal(int channelId, String content, String type, {int? replyToId}) async {
     // Récupérer l'ID de l'utilisateur actuel
     final currentUser = StorageService.getUser();
     // Utiliser l'email comme senderId pour être cohérent avec le backend
@@ -127,13 +132,12 @@ class ChatProvider with ChangeNotifier {
       notifyListeners();
 
       // Send via WebSocket for real-time delivery
-      final messageContent = fileName != null ? fileName : content;
-      _wsService.sendMessage(channelId, content ?? '', type, replyToId: replyToId);
+      _wsService.sendMessage(channelId, content, type, replyToId: replyToId);
 
       // Also send via REST API as backup
       await _apiService.sendMessage({
         'channelId': channelId,
-        'content': content ?? '',
+        'content': content,
         'type': type,
         if (replyToId != null) 'replyToId': replyToId,
       });

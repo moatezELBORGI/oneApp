@@ -109,11 +109,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (image != null) {
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-      await chatProvider.sendMessageWithFile(
-        widget.channel.id,
-        File(image.path),
-        Constants.messageTypeImage,
-      );
+      try {
+        // Upload the file first to get the file ID
+        final result = await chatProvider.sendMessageWithFile(
+          widget.channel.id,
+          File(image.path),
+          Constants.messageTypeImage,
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur lors de l\'envoi de l\'image: $e')),
+          );
+        }
+      }
     }
   }
 
@@ -123,11 +132,19 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (image != null) {
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-      await chatProvider.sendMessageWithFile(
-        widget.channel.id,
-        File(image.path),
-        Constants.messageTypeImage,
-      );
+      try {
+        await chatProvider.sendMessageWithFile(
+          widget.channel.id,
+          File(image.path),
+          Constants.messageTypeImage,
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur lors de l\'envoi de la photo: $e')),
+          );
+        }
+      }
     }
   }
 
