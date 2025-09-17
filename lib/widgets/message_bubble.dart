@@ -3,6 +3,10 @@ import 'package:intl/intl.dart';
 import '../models/message_model.dart';
 import '../utils/app_theme.dart';
 import '../utils/constants.dart';
+import '../services/storage_service.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -79,7 +83,7 @@ class MessageBubble extends StatelessWidget {
                       ),
                     ),
 
-                  _buildMessageContent(),
+                  _buildMessageContent(context),
 
                   const SizedBox(height: 4),
 
@@ -103,7 +107,7 @@ class MessageBubble extends StatelessWidget {
                       ],
                       if (isMe) ...[
                         const SizedBox(width: 4),
-                        Icon(
+                        const Icon(
                           Icons.done_all,
                           size: 14,
                           color: Colors.white70,
@@ -121,7 +125,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageContent() {
+  Widget _buildMessageContent(BuildContext context) {
     if (message.isDeleted) {
       return Text(
         message.content,
@@ -136,7 +140,7 @@ class MessageBubble extends StatelessWidget {
       case Constants.messageTypeImage:
         return _buildImageMessage();
       case Constants.messageTypeFile:
-        return _buildFileMessage();
+        return _buildFileMessage(context);
       case 'AUDIO':
         return _buildAudioMessage();
       default:
@@ -197,16 +201,16 @@ class MessageBubble extends StatelessWidget {
                   color: Colors.grey[300],
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
+                child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.image_not_supported,
                       size: 40,
                       color: Colors.grey,
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: 8),
+                    Text(
                       'Image non disponible',
                       style: TextStyle(
                         fontSize: 12,
@@ -223,8 +227,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildFileMessage() {
-    // Utiliser le nom original du fichier s'il est disponible
+  Widget _buildFileMessage(BuildContext context) {
     final fileName = message.fileAttachment?.originalFilename ?? 
                     message.content.split('/').last.split('?').first;
 
@@ -235,9 +238,7 @@ class MessageBubble extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () {
-          _downloadFile();
-        },
+        onTap: () => _downloadFile(context),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -281,11 +282,75 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  void _downloadFile() {
-    if (message.fileAttachment?.downloadUrl != null) {
-      // TODO: Implémenter le téléchargement du fichier
-      // Vous pouvez utiliser url_launcher ou dio pour télécharger
-      print('Downloading file: ${message.fileAttachment!.downloadUrl}');
+  Future<void> _downloadFile(BuildContext context) async {
+    if (message.fileAttachment?.downloadUrl == null) return;
+
+    try {
+      // Afficher un indicateur de chargement
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text('Téléchargement en cours...'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Obtenir le répertoire de téléchargement
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = message.fileAttachment?.originalFilename ?? 
+                      'file_${DateTime.now().millisecondsSinceEpoch}';
+      final filePath = '${directory.path}/$fileName';
+
+      // Télécharger le fichier
+      final dio = Dio();
+      await dio.download(
+        message.fileAttachment!.downloadUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = (received / total * 100).toStringAsFixed(0);
+            print('Téléchargement: $progress%');
+          }
+        },
+      );
+
+      // Fermer l'indicateur de chargement
+      if (context.mounted) Navigator.of(context).pop();
+
+      // Afficher un message de succès
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fichier téléchargé: $fileName'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'OK',
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+
+    } catch (e) {
+      // Fermer l'indicateur de chargement en cas d'erreur
+      if (context.mounted) Navigator.of(context).pop();
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du téléchargement: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -318,15 +383,6 @@ class MessageBubble extends StatelessWidget {
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-  }
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildAudioMessage() {

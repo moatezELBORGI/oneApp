@@ -150,7 +150,7 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _isRecording = true;
     });
-  Future<void> _sendMessageInternal(int channelId, String content, String type, {String? fileAttachmentId, int? replyToId}) async {
+
     try {
       final audioPath = await audioService.startRecording();
       if (audioPath != null) {
@@ -158,19 +158,20 @@ class _ChatScreenState extends State<ChatScreen> {
         await Future.delayed(const Duration(seconds: 3)); // Example duration
 
         await audioService.stopRecording();
-      _wsService.sendMessage(channelId, content, type, 
-          replyToId: replyToId, fileAttachmentId: fileAttachmentId);
         final chatProvider = Provider.of<ChatProvider>(context, listen: false);
         await chatProvider.sendMessageWithFile(
+          widget.channel.id,
+          File(audioPath),
       final fileId = uploadResult['fileId'];
           'AUDIO',
-        'content': content,
-      await _sendMessageInternal(channelId, '', type, fileAttachmentId: fileId, replyToId: replyToId);
+        );
+      }
     } catch (e) {
-        if (fileAttachmentId != null) 'fileAttachmentId': int.tryParse(fileAttachmentId),
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de l\'enregistrement: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'enregistrement: $e')),
+        );
+      }
     }
 
     setState(() {
