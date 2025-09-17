@@ -43,7 +43,7 @@ class AudioService {
     try {
       await _initializeRecorder();
       
-      if (_recorder == null || !_recorder!.isOkToRecord) {
+      if (_recorder == null || !_recorder!.isInited) {
         print('DEBUG: Recorder not ready');
         return null;
       }
@@ -76,7 +76,7 @@ class AudioService {
     print('DEBUG: Stopping audio recording...');
     
     try {
-      if (_recorder != null && _recorder!.isRecording) {
+      if (_recorder != null && _recorder!.isInited && _isRecording) {
         await _recorder!.stopRecorder();
         _isRecording = false;
         print('DEBUG: Recording stopped. Path: $_currentRecordingPath');
@@ -92,7 +92,7 @@ class AudioService {
     print('DEBUG: Cancelling audio recording...');
     
     try {
-      if (_recorder != null && _recorder!.isRecording) {
+      if (_recorder != null && _recorder!.isInited && _isRecording) {
         await _recorder!.stopRecorder();
       }
       _isRecording = false;
@@ -116,7 +116,7 @@ class AudioService {
   Future<bool> isRecordingAvailable() async {
     try {
       await _initializeRecorder();
-      return _recorder?.isOkToRecord ?? false;
+      return _recorder?.isInited ?? false;
     } catch (e) {
       print('Error checking recording availability: $e');
       return false;
