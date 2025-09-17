@@ -162,7 +162,6 @@ class _ChatScreenState extends State<ChatScreen> {
         await chatProvider.sendMessageWithFile(
           widget.channel.id,
           File(audioPath),
-      final fileId = uploadResult['fileId'];
           'AUDIO',
         );
       }
