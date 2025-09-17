@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:record/record.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -8,11 +8,18 @@ class AudioService {
   factory AudioService() => _instance;
   AudioService._internal();
 
-  final Record _recorder = Record();
+  FlutterSoundRecorder? _recorder;
   bool _isRecording = false;
   String? _currentRecordingPath;
 
   bool get isRecording => _isRecording;
+
+  Future<void> _initializeRecorder() async {
+    if (_recorder == null) {
+      _recorder = FlutterSoundRecorder();
+      await _recorder!.openRecorder();
+    }
+  }
 
   Future<bool> requestPermissions() async {
     try {
@@ -34,28 +41,29 @@ class AudioService {
     }
 
     try {
-      // Vérifier si le microphone est disponible
-      if (await _recorder.hasPermission()) {
-        final directory = await getTemporaryDirectory();
-        final filePath = '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        
-        print('DEBUG: Recording to path: $filePath');
-
-        await _recorder.start(
-          path: filePath,
-          encoder: AudioEncoder.aacLc,
-          bitRate: 128000,
-          samplingRate: 44100,
-        );
-
-        _isRecording = true;
-        _currentRecordingPath = filePath;
-        print('DEBUG: Recording started successfully');
-        return filePath;
-      } else {
-        print('DEBUG: No microphone permission');
+      await _initializeRecorder();
+      
+      if (_recorder == null || !_recorder!.isOkToRecord) {
+        print('DEBUG: Recorder not ready');
         return null;
       }
+
+      final directory = await getTemporaryDirectory();
+      final filePath = '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.aac';
+      
+      print('DEBUG: Recording to path: $filePath');
+
+      await _recorder!.startRecorder(
+        toFile: filePath,
+        codec: Codec.aacADTS,
+        bitRate: 128000,
+        sampleRate: 44100,
+      );
+
+      _isRecording = true;
+      _currentRecordingPath = filePath;
+      print('DEBUG: Recording started successfully');
+      return filePath;
     } catch (e) {
       print('Error starting recording: $e');
       _isRecording = false;
@@ -68,10 +76,11 @@ class AudioService {
     print('DEBUG: Stopping audio recording...');
     
     try {
-      final path = await _recorder.stop();
-      _isRecording = false;
-      _currentRecordingPath = null;
-      print('DEBUG: Recording stopped. Final path: $path');
+      if (_recorder != null && _recorder!.isRecording) {
+        await _recorder!.stopRecorder();
+        _isRecording = false;
+        print('DEBUG: Recording stopped. Path: $_currentRecordingPath');
+      }
     } catch (e) {
       print('Error stopping recording: $e');
       _isRecording = false;
@@ -83,7 +92,9 @@ class AudioService {
     print('DEBUG: Cancelling audio recording...');
     
     try {
-      await _recorder.stop();
+      if (_recorder != null && _recorder!.isRecording) {
+        await _recorder!.stopRecorder();
+      }
       _isRecording = false;
       
       // Supprimer le fichier si il existe
@@ -104,7 +115,8 @@ class AudioService {
 
   Future<bool> isRecordingAvailable() async {
     try {
-      return await _recorder.hasPermission();
+      await _initializeRecorder();
+      return _recorder?.isOkToRecord ?? false;
     } catch (e) {
       print('Error checking recording availability: $e');
       return false;
@@ -118,7 +130,10 @@ class AudioService {
       if (_isRecording) {
         await stopRecording();
       }
-      await _recorder.dispose();
+      if (_recorder != null) {
+        await _recorder!.closeRecorder();
+        _recorder = null;
+      }
     } catch (e) {
       print('Error disposing audio service: $e');
     }
