@@ -17,7 +17,13 @@ class AudioService {
   Future<void> _initializeRecorder() async {
     if (_recorder == null) {
       _recorder = FlutterSoundRecorder();
-      await _recorder!.openRecorder();
+      try {
+        await _recorder!.openRecorder();
+        print('DEBUG: Recorder initialized successfully');
+      } catch (e) {
+        print('DEBUG: Error initializing recorder: $e');
+        _recorder = null;
+      }
     }
   }
 
@@ -43,7 +49,7 @@ class AudioService {
     try {
       await _initializeRecorder();
       
-      if (_recorder == null || !_recorder!.isInited) {
+      if (_recorder == null) {
         print('DEBUG: Recorder not ready');
         return null;
       }
@@ -76,7 +82,7 @@ class AudioService {
     print('DEBUG: Stopping audio recording...');
     
     try {
-      if (_recorder != null && _recorder!.isInited && _isRecording) {
+      if (_recorder != null && _isRecording) {
         await _recorder!.stopRecorder();
         _isRecording = false;
         print('DEBUG: Recording stopped. Path: $_currentRecordingPath');
@@ -92,7 +98,7 @@ class AudioService {
     print('DEBUG: Cancelling audio recording...');
     
     try {
-      if (_recorder != null && _recorder!.isInited && _isRecording) {
+      if (_recorder != null && _isRecording) {
         await _recorder!.stopRecorder();
       }
       _isRecording = false;
@@ -116,7 +122,7 @@ class AudioService {
   Future<bool> isRecordingAvailable() async {
     try {
       await _initializeRecorder();
-      return _recorder?.isInited ?? false;
+      return _recorder != null;
     } catch (e) {
       print('Error checking recording availability: $e');
       return false;
