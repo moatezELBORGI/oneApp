@@ -39,7 +39,7 @@ dependencies:
   path_provider: ^2.1.1
   
   # Audio
-  record: ^5.1.0
+  record: ^4.4.4
   audioplayers: ^5.2.1
   
   # Utils

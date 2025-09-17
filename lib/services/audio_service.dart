@@ -8,7 +8,7 @@ class AudioService {
   factory AudioService() => _instance;
   AudioService._internal();
 
-  final AudioRecorder _recorder = AudioRecorder();
+  final Record _recorder = Record();
   bool _isRecording = false;
   String? _currentRecordingPath;
 
@@ -42,12 +42,10 @@ class AudioService {
         print('DEBUG: Recording to path: $filePath');
 
         await _recorder.start(
-          const RecordConfig(
-            encoder: AudioEncoder.aacLc,
-            bitRate: 128000,
-            sampleRate: 44100,
-          ),
           path: filePath,
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          samplingRate: 44100,
         );
 
         _isRecording = true;
