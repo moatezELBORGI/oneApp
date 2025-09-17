@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import '../models/message_model.dart';
 import '../utils/app_theme.dart';
 import '../utils/constants.dart';
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -419,19 +419,72 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
   bool _isLoading = false;
+  String? _localFilePath;
 
   @override
   void initState() {
     super.initState();
     _initializeAudio();
+    _downloadAudioFile();
   }
 
+  Future<void> _downloadAudioFile() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Obtenir le répertoire temporaire
+      final directory = await getTemporaryDirectory();
+      final fileName = 'audio_${widget.messageId}.aac';
+      final filePath = '${directory.path}/$fileName';
+
+      // Vérifier si le fichier existe déjà
+      final file = File(filePath);
+      if (await file.exists()) {
+        _localFilePath = filePath;
+        await _setAudioSource();
+        return;
+      }
+
+      // Télécharger le fichier
+      final dio = Dio();
+      await dio.download(widget.audioUrl, filePath);
+      
+      _localFilePath = filePath;
+      await _setAudioSource();
+      
+    } catch (e) {
+      print('Error downloading audio file: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _setAudioSource() async {
+    if (_localFilePath == null) return;
+    
+    try {
+      await _audioPlayer.setSourceDeviceFile(_localFilePath!);
+      print('Audio source set successfully: $_localFilePath');
+    } catch (e) {
+      print('Error setting audio source: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
   void _initializeAudio() {
     _audioPlayer.onDurationChanged.listen((duration) {
       if (mounted) {
         setState(() {
           _duration = duration;
-          _isLoading = false;
         });
       }
     });
@@ -457,15 +510,17 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
   }
 
   void _togglePlayPause() async {
+    if (_localFilePath == null) {
+      print('Audio file not ready yet');
+      return;
+    }
+
     try {
-      setState(() {
-        _isLoading = true;
-      });
 
       if (_isPlaying) {
         await _audioPlayer.pause();
       } else {
-        await _audioPlayer.play(UrlSource(widget.audioUrl));
+        await _audioPlayer.resume();
       }
     } catch (e) {
       print('Error playing audio: $e');
@@ -476,12 +531,6 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
             backgroundColor: AppTheme.errorColor,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }

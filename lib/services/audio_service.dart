@@ -55,7 +55,7 @@ class AudioService {
       }
 
       final directory = await getTemporaryDirectory();
-      final filePath = '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.aac';
+      final filePath = '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.aac';
       
       print('DEBUG: Recording to path: $filePath');
 
