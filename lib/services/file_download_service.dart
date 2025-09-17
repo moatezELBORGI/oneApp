@@ -59,39 +59,45 @@ class FileDownloadService {
       final filePath = await downloadFile(url, fileName);
 
       // Fermer l'indicateur de chargement
-      Navigator.of(context).pop();
+      if (context.mounted) Navigator.of(context).pop();
 
       if (filePath != null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Fichier téléchargé: $fileName'),
+              backgroundColor: Colors.green,
+              action: SnackBarAction(
+                label: 'Ouvrir',
+                onPressed: () {
+                  // TODO: Ouvrir le fichier avec l'application par défaut
+                },
+              ),
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Erreur lors du téléchargement'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Fermer l'indicateur de chargement en cas d'erreur
+      if (context.mounted) Navigator.of(context).pop();
+      
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fichier téléchargé: $fileName'),
-            backgroundColor: Colors.green,
-            action: SnackBarAction(
-              label: 'Ouvrir',
-              onPressed: () {
-                // TODO: Ouvrir le fichier avec l'application par défaut
-              },
-            ),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors du téléchargement'),
+            content: Text('Erreur: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      // Fermer l'indicateur de chargement en cas d'erreur
-      Navigator.of(context).pop();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 }

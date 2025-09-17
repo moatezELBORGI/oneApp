@@ -34,6 +34,11 @@ public class FileController {
         return fileService.getFile(fileId);
     }
 
+    @GetMapping("/download/{fileId}")
+    public ResponseEntity<byte[]> downloadFile(@PathVariable String fileId) {
+        return fileService.downloadFile(fileId);
+    }
+
     @DeleteMapping("/{fileId}")
     public ResponseEntity<Void> deleteFile(
             @PathVariable String fileId,

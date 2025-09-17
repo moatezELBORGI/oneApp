@@ -161,6 +161,9 @@ class MessageBubble extends StatelessWidget {
             width: 200,
             height: 150,
             fit: BoxFit.cover,
+            headers: const {
+              'Accept': 'image/*',
+            },
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
               return Container(
@@ -170,12 +173,23 @@ class MessageBubble extends StatelessWidget {
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Center(
-                  child: CircularProgressIndicator(),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${((loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)) * 100).toInt()}%',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
             errorBuilder: (context, error, stackTrace) {
+              print('Error loading image: $error');
               return Container(
                 width: 200,
                 height: 150,
@@ -183,10 +197,23 @@ class MessageBubble extends StatelessWidget {
                   color: Colors.grey[300],
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.image_not_supported,
-                  size: 50,
-                  color: Colors.grey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.image_not_supported,
+                      size: 40,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Image non disponible',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -197,7 +224,9 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildFileMessage() {
-    final fileName = message.content.split('/').last.split('?').first;
+    // Utiliser le nom original du fichier s'il est disponible
+    final fileName = message.fileAttachment?.originalFilename ?? 
+                    message.content.split('/').last.split('?').first;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -207,22 +236,89 @@ class MessageBubble extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          // TODO: Open file or download
+          _downloadFile();
         },
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.insert_drive_file,
+              _getFileIcon(fileName),
               color: isMe ? Colors.white : AppTheme.primaryColor,
             ),
             const SizedBox(width: 8),
             Flexible(
-              child: Text(
-                fileName,
-                style: TextStyle(
-                  color: isMe ? Colors.white : AppTheme.textPrimary,
-                  fontWeight: FontWeight.w500,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fileName,
+                    style: TextStyle(
+                      color: isMe ? Colors.white : AppTheme.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (message.fileAttachment?.fileSize != null)
+                    Text(
+                      _formatFileSize(message.fileAttachment!.fileSize),
+                      style: TextStyle(
+                        color: isMe ? Colors.white70 : Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.download,
+              size: 16,
+              color: isMe ? Colors.white70 : Colors.grey[600],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _downloadFile() {
+    if (message.fileAttachment?.downloadUrl != null) {
+      // TODO: Implémenter le téléchargement du fichier
+      // Vous pouvez utiliser url_launcher ou dio pour télécharger
+      print('Downloading file: ${message.fileAttachment!.downloadUrl}');
+    }
+  }
+
+  IconData _getFileIcon(String fileName) {
+    final extension = fileName.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'xls':
+      case 'xlsx':
+        return Icons.table_chart;
+      case 'ppt':
+      case 'pptx':
+        return Icons.slideshow;
+      case 'zip':
+      case 'rar':
+        return Icons.archive;
+      case 'txt':
+        return Icons.text_snippet;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
                 ),
                 overflow: TextOverflow.ellipsis,
               ),

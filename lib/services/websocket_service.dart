@@ -124,7 +124,7 @@ class WebSocketService {
     }
   }
 
-  void sendMessage(int channelId, String content, String type, {int? replyToId}) {
+  void sendMessage(int channelId, String content, String type, {int? replyToId, String? fileAttachmentId}) {
     if (!_isConnected || _stompClient == null) return;
 
     final messageData = {
@@ -132,6 +132,7 @@ class WebSocketService {
       'content': content,
       'type': type,
       if (replyToId != null) 'replyToId': replyToId,
+      if (fileAttachmentId != null) 'fileAttachmentId': int.tryParse(fileAttachmentId),
     };
 
     _stompClient!.send(

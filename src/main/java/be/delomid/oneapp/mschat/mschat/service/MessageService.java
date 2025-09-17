@@ -55,11 +55,17 @@ public class MessageService {
         String content = request.getContent();
         if (content == null || content.trim().isEmpty()) {
             if (fileAttachment != null) {
-                content = fileAttachment.getOriginalFilename();
+                // Pour les images, utiliser l'URL complète
+                if (fileAttachment.getFileType() == FileType.IMAGE) {
+                    content = "http://localhost:9090/api/v1/files/" + fileAttachment.getStoredFilename();
+                } else {
+                    content = fileAttachment.getOriginalFilename();
+                }
             } else {
                 throw new IllegalArgumentException("Message content or file attachment is required");
             }
         }
+        
         Message message = Message.builder()
                 .channel(channel)
                 .senderId(senderId)
@@ -159,7 +165,7 @@ public class MessageService {
                     .originalFilename(file.getOriginalFilename())
                     .storedFilename(file.getStoredFilename())
                     .filePath(file.getFilePath())
-                    .downloadUrl(baseUrl + "download/" + file.getFilePath())
+                    .downloadUrl(baseUrl + "download/" + file.getStoredFilename())
                     .fileSize(file.getFileSize())
                     .mimeType(file.getMimeType())
                     .fileType(file.getFileType())
@@ -167,7 +173,7 @@ public class MessageService {
                     .duration(file.getDuration())
                     .thumbnailPath(file.getThumbnailPath())
                     .thumbnailUrl(file.getThumbnailPath() != null ?
-                            baseUrl + "view/" + file.getThumbnailPath() : null)
+                            baseUrl + file.getThumbnailPath() : null)
                     .createdAt(file.getCreatedAt())
                     .build();
         }

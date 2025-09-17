@@ -48,6 +48,11 @@ public class FileService {
             Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
+            // Construire l'URL complète pour l'accès au fichier
+            String baseUrl = "http://localhost:9090/api/v1/files/";
+            String fileUrl = baseUrl + filename;
+            String downloadUrl = baseUrl + "download/" + filename;
+
             // Construire la réponse
             Map<String, Object> response = new HashMap<>();
             response.put("fileId", filename);
@@ -55,7 +60,8 @@ public class FileService {
             response.put("size", file.getSize());
             response.put("type", type);
             response.put("mimeType", file.getContentType());
-            response.put("url", "/api/v1/files/" + filename);
+            response.put("url", fileUrl);
+            response.put("downloadUrl", downloadUrl);
             response.put("uploadedBy", userId);
 
             log.info("File uploaded successfully: {} by user: {}", filename, userId);
@@ -89,6 +95,35 @@ public class FileService {
 
         } catch (IOException e) {
             log.error("Error retrieving file: {}", fileId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    public ResponseEntity<byte[]> downloadFile(String fileId) {
+        try {
+            Path filePath = Paths.get(uploadDir).resolve(fileId);
+
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            byte[] fileContent = Files.readAllBytes(filePath);
+            String contentType = Files.probeContentType(filePath);
+
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            // Récupérer le nom original du fichier si possible
+            String originalFilename = fileId;
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + originalFilename + "\"")
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(fileContent);
+
+        } catch (IOException e) {
+            log.error("Error downloading file: {}", fileId, e);
             return ResponseEntity.internalServerError().build();
         }
     }

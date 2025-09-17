@@ -30,13 +30,6 @@ public class WebSocketMessageController {
             // Récupérer l'ID utilisateur du JWT
             String userId = principal.getName();
 
-            // Validation pour les messages avec fichiers
-            if (request.getFileAttachmentId() != null &&
-                    (request.getContent() == null || request.getContent().trim().isEmpty())) {
-                // Pour les fichiers, le contenu peut être vide
-                log.debug("Sending file message to channel {}", request.getChannelId());
-            }
-
             // Envoyer le message via le service
             MessageDto message = messageService.sendMessage(request, userId);
 
@@ -46,7 +39,7 @@ public class WebSocketMessageController {
                     message
             );
 
-            log.debug("Message sent via WebSocket: channelId={}, userId={}",
+            log.debug("Message sent via WebSocket: channelId={}, userId={}, type={}",
                     request.getChannelId(), userId, request.getType());
 
         } catch (Exception e) {
