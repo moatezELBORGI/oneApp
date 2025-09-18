@@ -36,6 +36,9 @@ public class ChannelService {
     public ChannelDto createChannel(CreateChannelRequest request, String createdBy) {
         log.debug("Creating channel: {} by user: {}", request.getName(), createdBy);
 
+        // Vérifier que seuls les admins peuvent créer des canaux
+        validateAdminAccess(createdBy);
+
         // Vérifications spécifiques selon le type de canal
         validateChannelCreation(request, createdBy);
 
@@ -64,6 +67,60 @@ public class ChannelService {
         }
 
         return convertToDto(channel);
+    }
+    
+    @Transactional
+    public ChannelDto addMemberToChannel(Long channelId, String memberIdToAdd, String adminId) {
+        log.debug("Adding member {} to channel {} by admin {}", memberIdToAdd, channelId, adminId);
+        
+        Channel channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new ChannelNotFoundException("Channel not found: " + channelId));
+        
+        // Vérifier que l'utilisateur est admin du canal
+        validateChannelAdminAccess(channelId, adminId);
+        
+        // Vérifier que le membre à ajouter est du même immeuble
+        validateSameBuildingAccess(adminId, memberIdToAdd);
+        
+        // Vérifier si l'utilisateur n'est pas déjà membre
+        Optional<ChannelMember> existingMember = channelMemberRepository
+                .findByChannelIdAndUserId(channelId, memberIdToAdd);
+        
+        if (existingMember.isPresent()) {
+            if (existingMember.get().getIsActive()) {
+                throw new IllegalStateException("User is already a member of this channel");
+            } else {
+                // Réactiver le membre
+                existingMember.get().setIsActive(true);
+                existingMember.get().setLeftAt(null);
+                channelMemberRepository.save(existingMember.get());
+            }
+        } else {
+            addChannelMember(channel, memberIdToAdd, MemberRole.MEMBER);
+        }
+        
+        return convertToDto(channel, adminId);
+    }
+    
+    @Transactional
+    public void removeMemberFromChannel(Long channelId, String memberIdToRemove, String adminId) {
+        // Vérifier que l'utilisateur est admin du canal
+        validateChannelAdminAccess(channelId, adminId);
+        
+        ChannelMember member = channelMemberRepository
+                .findByChannelIdAndUserId(channelId, memberIdToRemove)
+                .orElseThrow(() -> new UnauthorizedAccessException("User is not a member of this channel"));
+        
+        // Ne pas permettre de supprimer le propriétaire du canal
+        if (member.getRole() == MemberRole.OWNER) {
+            throw new IllegalStateException("Cannot remove channel owner");
+        }
+        
+        member.setIsActive(false);
+        member.setLeftAt(LocalDateTime.now());
+        channelMemberRepository.save(member);
+        
+        log.debug("User {} removed from channel {} by admin {}", memberIdToRemove, channelId, adminId);
     }
 
     public Page<ChannelDto> getUserChannels(String userId, Pageable pageable) {
@@ -233,6 +290,11 @@ public class ChannelService {
     }
 
     private void validateChannelCreation(CreateChannelRequest request, String createdBy) {
+        // Seuls les canaux GROUP sont autorisés maintenant
+        if (request.getType() != ChannelType.GROUP) {
+            throw new IllegalArgumentException("Only GROUP channels can be created by admins");
+        }
+        
         // Validation pour les canaux building
         if (request.getType() == ChannelType.BUILDING) {
             if (request.getBuildingId() == null) {
@@ -258,6 +320,67 @@ public class ChannelService {
             if (existing.isPresent()) {
                 throw new IllegalArgumentException("A channel for this building group already exists");
             }
+        }
+    }
+    
+    private void validateAdminAccess(String userId) {
+        Resident user = residentRepository.findByEmail(userId)
+                .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+        
+        if (user.getRole() != UserRole.BUILDING_ADMIN && 
+            user.getRole() != UserRole.GROUP_ADMIN && 
+            user.getRole() != UserRole.SUPER_ADMIN) {
+            throw new UnauthorizedAccessException("Only admins can create channels");
+        }
+    }
+    
+    private void validateChannelAdminAccess(Long channelId, String userId) {
+        Resident user = residentRepository.findByEmail(userId)
+                .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+        
+        // Super admin a accès à tout
+        if (user.getRole() == UserRole.SUPER_ADMIN) {
+            return;
+        }
+        
+        // Vérifier si l'utilisateur est admin/owner du canal
+        ChannelMember member = channelMemberRepository
+                .findByChannelIdAndUserId(channelId, user.getIdUsers())
+                .orElseThrow(() -> new UnauthorizedAccessException("User is not a member of this channel"));
+        
+        if (member.getRole() != MemberRole.OWNER && member.getRole() != MemberRole.ADMIN &&
+            user.getRole() != UserRole.BUILDING_ADMIN) {
+            throw new UnauthorizedAccessException("User does not have admin access to this channel");
+        }
+    }
+    
+    private void validateSameBuildingAccess(String adminId, String memberId) {
+        Resident admin = residentRepository.findByEmail(adminId)
+                .orElseThrow(() -> new UnauthorizedAccessException("Admin not found"));
+        
+        Resident member = residentRepository.findById(memberId)
+                .orElseThrow(() -> new UnauthorizedAccessException("Member not found"));
+        
+        // Super admin peut ajouter n'importe qui
+        if (admin.getRole() == UserRole.SUPER_ADMIN) {
+            return;
+        }
+        
+        // Vérifier que les deux utilisateurs sont du même immeuble
+        String adminBuildingId = null;
+        String memberBuildingId = null;
+        
+        if (admin.getApartment() != null) {
+            adminBuildingId = admin.getApartment().getBuilding().getBuildingId();
+        }
+        
+        if (member.getApartment() != null) {
+            memberBuildingId = member.getApartment().getBuilding().getBuildingId();
+        }
+        
+        if (adminBuildingId == null || memberBuildingId == null || 
+            !adminBuildingId.equals(memberBuildingId)) {
+            throw new UnauthorizedAccessException("Admin can only add members from the same building");
         }
     }
 

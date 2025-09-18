@@ -13,14 +13,15 @@ public class CreateChannelRequest {
     @NotBlank(message = "Channel name is required")
     private String name;
     
+    @NotBlank(message = "Channel subject/description is required")
     private String description;
     
     @NotNull(message = "Channel type is required")
-    private ChannelType type;
+    private ChannelType type = ChannelType.GROUP;
     
     private String buildingId;
     private String buildingGroupId;
-    private Boolean isPrivate = false;
+    private Boolean isPrivate = true;
     
     // Pour les canaux de type GROUP ou ONE_TO_ONE
     private List<String> memberIds;

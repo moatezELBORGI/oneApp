@@ -154,6 +154,73 @@ class ApiService {
 
     _handleResponse(response);
   }
+  
+  // Vote endpoints
+  Future<Map<String, dynamic>> createVote(Map<String, dynamic> voteData) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/votes'),
+      headers: await _getHeaders(),
+      body: jsonEncode(voteData),
+    );
+
+    return _handleResponse(response);
+  }
+  
+  Future<void> submitVote(Map<String, dynamic> voteData) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/votes/submit'),
+      headers: await _getHeaders(),
+      body: jsonEncode(voteData),
+    );
+
+    _handleResponse(response);
+  }
+  
+  Future<Map<String, dynamic>> getChannelVotes(int channelId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/votes/channel/$channelId'),
+      headers: await _getHeaders(),
+    );
+
+    return _handleResponse(response);
+  }
+  
+  Future<Map<String, dynamic>> getVote(int voteId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/votes/$voteId'),
+      headers: await _getHeaders(),
+    );
+
+    return _handleResponse(response);
+  }
+  
+  Future<Map<String, dynamic>> closeVote(int voteId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/votes/$voteId/close'),
+      headers: await _getHeaders(),
+    );
+
+    return _handleResponse(response);
+  }
+  
+  // Channel member management
+  Future<Map<String, dynamic>> addMemberToChannel(int channelId, String memberId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/channels/$channelId/members/$memberId'),
+      headers: await _getHeaders(),
+    );
+
+    return _handleResponse(response);
+  }
+  
+  Future<void> removeMemberFromChannel(int channelId, String memberId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/channels/$channelId/members/$memberId'),
+      headers: await _getHeaders(),
+    );
+
+    _handleResponse(response);
+  }
 
   // Residents endpoints
   Future<List<dynamic>> getBuildingResidents(String buildingId) async {
