@@ -12,6 +12,7 @@ import '../../models/message_model.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/typing_indicator.dart';
 import '../../services/audio_service.dart';
+import '../votes/vote_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final Channel channel;
@@ -302,11 +303,76 @@ class _ChatScreenState extends State<ChatScreen> {
       actions: [
         IconButton(
           onPressed: () {
-            // TODO: Show channel info
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => VoteScreen(channel: widget.channel),
+              ),
+            );
+          },
+          icon: const Icon(Icons.poll),
+        ),
+        IconButton(
+          onPressed: () {
+            _showChannelInfo();
           },
           icon: const Icon(Icons.info_outline),
         ),
       ],
+    );
+  }
+
+  void _showChannelInfo() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              widget.channel.name,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (widget.channel.description != null)
+              Text(
+                'Sujet: ${widget.channel.description}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.people, size: 16, color: AppTheme.textSecondary),
+                const SizedBox(width: 8),
+                Text(
+                  '${widget.channel.memberCount} membres',
+                  style: const TextStyle(color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
   }
 

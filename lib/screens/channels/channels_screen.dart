@@ -59,11 +59,25 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CreateChannelScreen(),
-                ),
-              );
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              final user = authProvider.user;
+              
+              if (user?.role == 'BUILDING_ADMIN' || 
+                  user?.role == 'GROUP_ADMIN' || 
+                  user?.role == 'SUPER_ADMIN') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CreateChannelScreen(),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Seuls les administrateurs peuvent créer des canaux'),
+                    backgroundColor: AppTheme.errorColor,
+                  ),
+                );
+              }
             },
             icon: const Icon(Icons.add),
           ),
@@ -129,6 +143,31 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
                 Text(
                   'Créez votre premier canal pour commencer',
                   style: TextStyle(color: Colors.grey[500]),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    final user = authProvider.user;
+                    
+                    if (user?.role == 'BUILDING_ADMIN' || 
+                        user?.role == 'GROUP_ADMIN' || 
+                        user?.role == 'SUPER_ADMIN') {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const CreateChannelScreen(),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Seuls les administrateurs peuvent créer des canaux'),
+                          backgroundColor: AppTheme.errorColor,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Créer un canal'),
                 ),
               ],
             ),
@@ -242,9 +281,12 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
           children: [
             if (channel.description != null)
               Text(
-                channel.description!,
+                'Sujet: ${channel.description!}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             const SizedBox(height: 4),
             Row(
@@ -303,7 +345,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
       case 'PUBLIC':
         return Icons.public;
       default:
-        return Icons.forum;
+        return Icons.topic;
     }
   }
 
