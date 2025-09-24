@@ -40,7 +40,7 @@ public class WebSocketMessageController {
             );
 
             log.debug("Message sent via WebSocket: channelId={}, userId={}, type={}",
-                    request.getChannelId(), userId, request.getType());
+                    request.getChannelId(), userId, request.getType(), message.getId());
 
         } catch (Exception e) {
             log.error("Error sending message via WebSocket", e);

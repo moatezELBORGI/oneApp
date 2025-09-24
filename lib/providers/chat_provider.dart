@@ -112,35 +112,8 @@ class ChatProvider with ChangeNotifier {
     print('DEBUG: Sending message from user email: $senderId'); // Debug log
 
     try {
-      // Créer un message temporaire pour l'affichage immédiat
-      final tempMessage = Message(
-        id: DateTime.now().millisecondsSinceEpoch, // ID temporaire
-        channelId: channelId,
-        senderId: senderId,
-        content: content,
-        type: type,
-        replyToId: replyToId,
-        isEdited: false,
-        isDeleted: false,
-        createdAt: DateTime.now(),
-      );
-
-      // Ajouter immédiatement le message à la liste locale
-      final channelMessages = _channelMessages[channelId] ?? [];
-      channelMessages.insert(0, tempMessage);
-      _channelMessages[channelId] = channelMessages;
-      notifyListeners();
-
-      // Send via WebSocket for real-time delivery
+      // Envoyer uniquement via WebSocket - le message sera reçu via WebSocket
       _wsService.sendMessage(channelId, content, type, replyToId: replyToId);
-
-      // Also send via REST API as backup
-      await _apiService.sendMessage({
-        'channelId': channelId,
-        'content': content,
-        'type': type,
-        if (replyToId != null) 'replyToId': replyToId,
-      });
     } catch (e) {
       _setError(e.toString());
     }
@@ -216,22 +189,12 @@ class ChatProvider with ChangeNotifier {
 
     final channelMessages = _channelMessages[message.channelId] ?? [];
 
-    // Remplacer le message temporaire s'il existe, sinon ajouter le nouveau
-    final tempMessageIndex = channelMessages.indexWhere((m) =>
-    m.content == message.content &&
-        (m.senderId == currentUser?.email || m.senderId == currentUser?.id) &&
-        (message.senderId == currentUser?.email || message.senderId == currentUser?.id) &&
-        m.createdAt.difference(message.createdAt).abs().inSeconds < 5
-    );
-
-    if (tempMessageIndex != -1) {
-      // Remplacer le message temporaire par le message réel
-      channelMessages[tempMessageIndex] = message;
-      print('DEBUG: Replaced temporary message'); // Debug log
-    } else if (!channelMessages.any((m) => m.id == message.id)) {
-      // Ajouter le nouveau message s'il n'existe pas déjà
+    // Ajouter le nouveau message s'il n'existe pas déjà
+    if (!channelMessages.any((m) => m.id == message.id)) {
       channelMessages.insert(0, message);
-      print('DEBUG: Added new message'); // Debug log
+      print('DEBUG: Added new message with ID: ${message.id}'); // Debug log
+    } else {
+      print('DEBUG: Message with ID ${message.id} already exists, skipping'); // Debug log
     }
 
     _channelMessages[message.channelId] = channelMessages;
