@@ -34,8 +34,8 @@ public class VoteService {
         Channel channel = channelRepository.findById(request.getChannelId())
                 .orElseThrow(() -> new IllegalArgumentException("Channel not found: " + request.getChannelId()));
         
-        // Vérifier que l'utilisateur est admin du canal
-        validateChannelAdminAccess(request.getChannelId(), createdBy);
+        // Vérifier que l'utilisateur est admin pour créer des votes
+        validateVoteCreationAccess(createdBy);
         
         // Créer le vote
         Vote vote = Vote.builder()
@@ -163,6 +163,7 @@ public class VoteService {
     private void validateChannelAdminAccess(Long channelId, String userId) {
         // Récupérer l'utilisateur
         Resident user = residentRepository.findByEmail(userId)
+                .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
         
         // Vérifier si l'utilisateur est admin du bâtiment ou super admin
@@ -180,8 +181,22 @@ public class VoteService {
         }
     }
     
+    private void validateVoteCreationAccess(String userId) {
+        Resident user = residentRepository.findByEmail(userId)
+                .or(() -> residentRepository.findById(userId))
+                .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+        
+        // Seuls les admins peuvent créer des votes
+        if (user.getRole() != UserRole.BUILDING_ADMIN && 
+            user.getRole() != UserRole.GROUP_ADMIN && 
+            user.getRole() != UserRole.SUPER_ADMIN) {
+            throw new UnauthorizedAccessException("Only building admins can create votes");
+        }
+    }
+    
     private void validateChannelMemberAccess(Long channelId, String userId) {
         Resident user = residentRepository.findByEmail(userId)
+                .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
         
         ChannelMember member = channelMemberRepository
