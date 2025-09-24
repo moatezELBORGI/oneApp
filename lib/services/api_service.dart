@@ -152,7 +152,7 @@ class ApiService {
       headers: await _getHeaders(),
     );
 
-    _handleResponse(response);
+    _handleVoidResponse(response);
   }
   
   // Vote endpoints
@@ -173,7 +173,7 @@ class ApiService {
       body: jsonEncode(voteData),
     );
 
-    _handleResponse(response);
+    _handleVoidResponse(response);
   }
   
   Future<List<dynamic>> getChannelVotes(int channelId) async {
@@ -219,7 +219,7 @@ class ApiService {
       headers: await _getHeaders(),
     );
 
-    _handleResponse(response);
+    _handleVoidResponse(response);
   }
 
   // Residents endpoints
@@ -290,6 +290,35 @@ class ApiService {
         message: data['message'] ?? 'Une erreur est survenue',
         statusCode: response.statusCode,
       );
+    }
+  }
+
+  void _handleVoidResponse(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      // Success - no need to parse response body for void endpoints
+      return;
+    } else {
+      // Try to parse error message if response has content
+      try {
+        if (response.body.isNotEmpty) {
+          final data = jsonDecode(response.body);
+          throw ApiException(
+            message: data['message'] ?? 'Une erreur est survenue',
+            statusCode: response.statusCode,
+          );
+        } else {
+          throw ApiException(
+            message: 'Une erreur est survenue',
+            statusCode: response.statusCode,
+          );
+        }
+      } catch (e) {
+        if (e is ApiException) rethrow;
+        throw ApiException(
+          message: 'Erreur de communication avec le serveur',
+          statusCode: response.statusCode,
+        );
+      }
     }
   }
 }
