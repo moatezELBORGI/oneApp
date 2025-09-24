@@ -176,13 +176,13 @@ class ApiService {
     _handleResponse(response);
   }
   
-  Future<Map<String, dynamic>> getChannelVotes(int channelId) async {
+  Future<List<dynamic>> getChannelVotes(int channelId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/votes/channel/$channelId'),
       headers: await _getHeaders(),
     );
 
-    return _handleResponse(response);
+    return _handleListResponse(response);
   }
   
   Future<Map<String, dynamic>> getVote(int voteId) async {

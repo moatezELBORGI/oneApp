@@ -27,7 +27,7 @@ class VoteProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.getChannelVotes(channelId);
-      final votes = (response as List)
+      final votes = response
           .map((json) => Vote.fromJson(json))
           .toList();
 
