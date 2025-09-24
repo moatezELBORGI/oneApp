@@ -370,12 +370,12 @@ public class ChannelService {
     
     private void validateSameBuildingAccess(String adminId, String memberId) {
         // Récupérer les utilisateurs (peut être par email ou par ID)
-        Resident user1 = residentRepository.findByEmail(userId1)
-                .or(() -> residentRepository.findById(userId1))
+        Resident user1 = residentRepository.findByEmail(adminId)
+                .or(() -> residentRepository.findById(adminId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User1 not found"));
         
-        Resident user2 = residentRepository.findById(userId2)
-                .or(() -> residentRepository.findByEmail(userId2))
+        Resident user2 = residentRepository.findById(memberId)
+                .or(() -> residentRepository.findByEmail(memberId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User2 not found"));
         
         // Super admin peut créer des discussions avec n'importe qui
