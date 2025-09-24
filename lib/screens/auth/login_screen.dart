@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/responsive_utils.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import 'otp_screen.dart';
@@ -57,20 +58,13 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(ResponsiveUtils.getResponsivePadding(context)),
           child: Form(
             key: _formKey,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - 
-                          MediaQuery.of(context).padding.top - 
-                          MediaQuery.of(context).padding.bottom - 48,
-              ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(height: MediaQuery.of(context).size.height * 0.05),
                 
                 // Logo and Title
                 Center(
@@ -93,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Text(
                         'MGI',
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: ResponsiveUtils.getResponsiveFontSize(context, 32),
                           fontWeight: FontWeight.bold,
                           color: AppTheme.textPrimary,
                         ),
@@ -102,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Text(
                         'Connectez-vous à votre compte',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: ResponsiveUtils.getResponsiveFontSize(context, 16),
                           color: AppTheme.textSecondary,
                         ),
                       ),
@@ -110,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 50),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.06),
                 
                 // Email Field
                 CustomTextField(
@@ -129,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 
                 // Password Field
                 CustomTextField(
@@ -155,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
                 
                 // Login Button
                 Consumer<AuthProvider>(
@@ -193,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
                 
                 // Forgot Password
                 TextButton(
@@ -203,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text('Mot de passe oublié ?'),
                 ),
                 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 
                 // Register Link
                 Row(
@@ -221,6 +215,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
+                
+                SizedBox(height: MediaQuery.of(context).size.height * 0.05),
               ],
             ),
           ),

@@ -446,7 +446,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageInput() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 8 : 16,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -458,6 +463,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
       child: SafeArea(
+        top: false,
         bottom: true,
         child: Row(
           children: [

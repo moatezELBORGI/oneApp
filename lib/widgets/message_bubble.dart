@@ -158,79 +158,83 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildImageMessage() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final imageWidth = (screenWidth * 0.6).clamp(150.0, 250.0);
-    final imageHeight = imageWidth * 0.75; // Ratio 4:3
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final imageWidth = (maxWidth * 0.9).clamp(150.0, 280.0);
+        final imageHeight = imageWidth * 0.75; // Ratio 4:3
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            message.content,
-            width: imageWidth,
-            height: imageHeight,
-            fit: BoxFit.cover,
-            headers: const {
-              'Accept': 'image/*',
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                message.content,
                 width: imageWidth,
                 height: imageHeight,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${((loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)) * 100).toInt()}%',
-                        style: const TextStyle(fontSize: 12),
+                fit: BoxFit.cover,
+                headers: const {
+                  'Accept': 'image/*',
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    width: imageWidth,
+                    height: imageHeight,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${((loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)) * 100).toInt()}%',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  print('Error loading image: $error');
+                  return Container(
+                    width: imageWidth,
+                    height: imageHeight,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.image_not_supported,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Image non disponible',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              print('Error loading image: $error');
-              return Container(
-                width: imageWidth,
-                height: imageHeight,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.image_not_supported,
-                      size: 40,
-                      color: Colors.grey,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Image non disponible',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
