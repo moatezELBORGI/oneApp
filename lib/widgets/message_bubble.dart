@@ -158,6 +158,10 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildImageMessage() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final imageWidth = (screenWidth * 0.6).clamp(150.0, 250.0);
+    final imageHeight = imageWidth * 0.75; // Ratio 4:3
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -165,8 +169,8 @@ class MessageBubble extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: Image.network(
             message.content,
-            width: 200,
-            height: 150,
+            width: imageWidth,
+            height: imageHeight,
             fit: BoxFit.cover,
             headers: const {
               'Accept': 'image/*',
@@ -174,8 +178,8 @@ class MessageBubble extends StatelessWidget {
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
               return Container(
-                width: 200,
-                height: 150,
+                width: imageWidth,
+                height: imageHeight,
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(12),
@@ -198,8 +202,8 @@ class MessageBubble extends StatelessWidget {
             errorBuilder: (context, error, stackTrace) {
               print('Error loading image: $error');
               return Container(
-                width: 200,
-                height: 150,
+                width: imageWidth,
+                height: imageHeight,
                 decoration: BoxDecoration(
                   color: Colors.grey[300],
                   borderRadius: BorderRadius.circular(12),

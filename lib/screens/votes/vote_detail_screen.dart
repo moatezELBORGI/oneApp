@@ -111,6 +111,7 @@ class _VoteDetailScreenState extends State<VoteDetailScreen> {
     final showResults = _currentVote.hasVoted || !_currentVote.isActive || isExpired;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Détails du vote'),
@@ -133,6 +134,7 @@ class _VoteDetailScreenState extends State<VoteDetailScreen> {
           }
 
           return SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
