@@ -266,6 +266,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.grey[50],
       appBar: _buildAppBar(),
       body: Column(
@@ -457,6 +458,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
       child: SafeArea(
+        bottom: true,
         child: Row(
           children: [
             _buildAttachmentButton(),
