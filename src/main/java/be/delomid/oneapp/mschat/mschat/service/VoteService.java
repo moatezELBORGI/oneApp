@@ -194,11 +194,13 @@ public class VoteService {
     }
     
     private VoteDto convertToDto(Vote vote, String userId) {
-        // Calculer les statistiques des options
-        List<VoteOptionDto> optionDtos = vote.getOptions().stream()
+        // Calculer les statistiques des options en évitant les références circulaires
+        List<VoteOption> options = voteOptionRepository.findByVoteId(vote.getId());
+        Long totalVotes = userVoteRepository.countByVoteId(vote.getId());
+        
+        List<VoteOptionDto> optionDtos = options.stream()
                 .map(option -> {
                     Long voteCount = voteOptionRepository.countVotesByOptionId(option.getId());
-                    Long totalVotes = userVoteRepository.countByVoteId(vote.getId());
                     Double percentage = totalVotes > 0 ? (voteCount.doubleValue() / totalVotes.doubleValue()) * 100 : 0.0;
                     
                     return VoteOptionDto.builder()
@@ -213,8 +215,6 @@ public class VoteService {
         // Vérifier si l'utilisateur a voté
         Resident user = residentRepository.findByEmail(userId).orElse(null);
         Boolean hasVoted = user != null && userVoteRepository.existsByVoteIdAndUserId(vote.getId(), user.getIdUsers());
-        
-        Long totalVotes = userVoteRepository.countByVoteId(vote.getId());
         
         return VoteDto.builder()
                 .id(vote.getId())
