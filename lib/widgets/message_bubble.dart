@@ -434,25 +434,32 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
         _isLoading = true;
       });
 
-      // Obtenir le répertoire temporaire
-      final directory = await getTemporaryDirectory();
-      final fileName = 'audio_${widget.messageId}.aac';
-      final filePath = '${directory.path}/$fileName';
+      // Vérifier si l'URL est locale ou distante
+      if (widget.audioUrl.startsWith('http')) {
+        // Obtenir le répertoire temporaire
+        final directory = await getTemporaryDirectory();
+        final fileName = 'audio_${widget.messageId}.aac';
+        final filePath = '${directory.path}/$fileName';
 
-      // Vérifier si le fichier existe déjà
-      final file = File(filePath);
-      if (await file.exists()) {
+        // Vérifier si le fichier existe déjà
+        final file = File(filePath);
+        if (await file.exists()) {
+          _localFilePath = filePath;
+          await _setAudioSource();
+          return;
+        }
+
+        // Télécharger le fichier
+        final dio = Dio();
+        await dio.download(widget.audioUrl, filePath);
+        
         _localFilePath = filePath;
         await _setAudioSource();
-        return;
+      } else {
+        // Fichier local
+        _localFilePath = widget.audioUrl;
+        await _setAudioSource();
       }
-
-      // Télécharger le fichier
-      final dio = Dio();
-      await dio.download(widget.audioUrl, filePath);
-      
-      _localFilePath = filePath;
-      await _setAudioSource();
       
     } catch (e) {
       print('Error downloading audio file: $e');
@@ -468,6 +475,19 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
     if (_localFilePath == null) return;
     
     try {
+      // Vérifier que le fichier existe
+      final file = File(_localFilePath!);
+      if (!await file.exists()) {
+        throw Exception('Audio file not found: $_localFilePath');
+      }
+      
+      // Vérifier la taille du fichier
+      final fileSize = await file.length();
+      if (fileSize == 0) {
+        throw Exception('Audio file is empty');
+      }
+      
+      print('Audio file exists: $_localFilePath, size: $fileSize bytes');
       await _audioPlayer.setSourceDeviceFile(_localFilePath!);
       print('Audio source set successfully: $_localFilePath');
     } catch (e) {
@@ -511,16 +531,22 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
 
   void _togglePlayPause() async {
     if (_localFilePath == null) {
-      print('Audio file not ready yet');
+      print('Audio file not ready yet, downloading...');
+      await _downloadAudioFile();
       return;
     }
 
     try {
-
       if (_isPlaying) {
         await _audioPlayer.pause();
       } else {
-        await _audioPlayer.resume();
+        // Essayer de reprendre, sinon jouer depuis le début
+        try {
+          await _audioPlayer.resume();
+        } catch (e) {
+          print('Resume failed, trying to play from start: $e');
+          await _audioPlayer.play(DeviceFileSource(_localFilePath!));
+        }
       }
     } catch (e) {
       print('Error playing audio: $e');
@@ -594,28 +620,46 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Barre de progression
-                Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: _duration.inMilliseconds > 0
-                      ? LinearProgressIndicator(
-                          value: _position.inMilliseconds / _duration.inMilliseconds,
-                          backgroundColor: Colors.transparent,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            widget.isMe ? Colors.white70 : AppTheme.primaryColor,
+                GestureDetector(
+                  onTapDown: (details) {
+                    if (_duration.inMilliseconds > 0) {
+                      final RenderBox box = context.findRenderObject() as RenderBox;
+                      final localPosition = box.globalToLocal(details.globalPosition);
+                      final progress = localPosition.dx / box.size.width;
+                      final newPosition = Duration(
+                        milliseconds: (_duration.inMilliseconds * progress).round(),
+                      );
+                      _audioPlayer.seek(newPosition);
+                    }
+                  },
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: _duration.inMilliseconds > 0
+                        ? LinearProgressIndicator(
+                            value: _position.inMilliseconds / _duration.inMilliseconds,
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              widget.isMe ? Colors.white70 : AppTheme.primaryColor,
+                            ),
+                          )
+                        : LinearProgressIndicator(
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              widget.isMe ? Colors.white70 : AppTheme.primaryColor,
+                            ),
                           ),
-                        )
-                      : null,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 // Durée
                 Text(
                   _duration.inMilliseconds > 0 
                       ? '${_formatDuration(_position)} / ${_formatDuration(_duration)}'
-                      : 'Message vocal',
+                      : _isLoading ? 'Chargement...' : 'Message vocal',
                   style: TextStyle(
                     color: widget.isMe ? Colors.white70 : Colors.grey[600],
                     fontSize: 11,
