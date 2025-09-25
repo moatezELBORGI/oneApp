@@ -18,6 +18,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(exclude = {"address", "apartments"})
+@ToString(exclude = {"address", "apartments"})
 public class Building {
     
     @Id

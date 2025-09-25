@@ -157,16 +157,16 @@ public class ChannelService {
     }
 
     private String getCurrentUserBuildingId(Resident user) {
-        // Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
-        if (user.getApartment() != null) {
-            return user.getApartment().getBuilding().getBuildingId();
-        }
-        
-        // Sinon, chercher dans les relations ResidentBuilding (pour les admins sans appartement)
+        // Chercher dans les relations ResidentBuilding en priorité
         List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
         if (!userBuildings.isEmpty()) {
-            // Prendre le premier bâtiment actif (ou implémenter une logique de sélection)
+            // Prendre le premier bâtiment actif
             return userBuildings.get(0).getBuilding().getBuildingId();
+        }
+        
+        // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
+        if (user.getApartment() != null) {
+            return user.getApartment().getBuilding().getBuildingId();
         }
         
         return null; // Aucun bâtiment assigné
@@ -304,20 +304,28 @@ public class ChannelService {
     }
 
     private void validateUserBuildingAccess(String userId, String buildingId) {
-        // Récupérer l'utilisateur d'abord
         Resident user = residentRepository.findById(userId)
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
 
-        // Vérifier par l'appartement
-        Optional<Apartment> userApartment = apartmentRepository.findByResidentIdUsers(userId);
-        if (userApartment.isPresent() && userApartment.get().getBuilding().getBuildingId().equals(buildingId)) {
-            return; // Utilisateur trouvé via appartement
+        // Vérifier via ResidentBuilding en priorité
+        List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(userId);
+        boolean hasAccessViaResidentBuilding = userBuildings.stream()
+                .anyMatch(rb -> rb.getBuilding().getBuildingId().equals(buildingId));
+        
+        if (hasAccessViaResidentBuilding) {
+            return;
         }
 
-        // Vérifier par email (fallback)
+        // Fallback: Vérifier par l'appartement
+        Optional<Apartment> userApartment = apartmentRepository.findByResidentIdUsers(userId);
+        if (userApartment.isPresent() && userApartment.get().getBuilding().getBuildingId().equals(buildingId)) {
+            return;
+        }
+        
+        // Vérifier par email
         Optional<Apartment> apartmentByEmail = apartmentRepository.findByResidentEmail(user.getEmail());
         if (apartmentByEmail.isPresent() && apartmentByEmail.get().getBuilding().getBuildingId().equals(buildingId)) {
-            return; // Utilisateur trouvé via email
+            return;
         }
 
         // Si admin du bâtiment, autoriser l'accès
@@ -330,8 +338,7 @@ public class ChannelService {
             return;
         }
 
-        log.debug("Access denied for user {} to building {}. User apartment: {}, User email: {}",
-                userId, buildingId, userApartment.map(a -> a.getIdApartment()).orElse("none"), user.getEmail());
+        log.debug("Access denied for user {} to building {}", userId, buildingId);
         throw new UnauthorizedAccessException("User does not live in this building");
     }
 
@@ -408,7 +415,6 @@ public class ChannelService {
     }
 
     private void validateSameBuildingAccess(String adminId, String memberId) {
-        // Récupérer les utilisateurs (peut être par email ou par ID)
         Resident user1 = residentRepository.findByEmail(adminId)
                 .or(() -> residentRepository.findById(adminId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User1 not found"));
@@ -422,17 +428,9 @@ public class ChannelService {
             return;
         }
 
-        // Vérifier que les deux utilisateurs sont du même immeuble
-        String user1BuildingId = null;
-        String user2BuildingId = null;
-
-        if (user1.getApartment() != null) {
-            user1BuildingId = user1.getApartment().getBuilding().getBuildingId();
-        }
-
-        if (user2.getApartment() != null) {
-            user2BuildingId = user2.getApartment().getBuilding().getBuildingId();
-        }
+        // Utiliser la méthode sécurisée pour obtenir les bâtiments
+        String user1BuildingId = getCurrentUserBuildingId(user1);
+        String user2BuildingId = getCurrentUserBuildingId(user2);
 
         if (user1BuildingId == null || user2BuildingId == null ||
                 !user1BuildingId.equals(user2BuildingId)) {

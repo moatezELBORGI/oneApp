@@ -150,15 +150,15 @@ public class MessageService {
     }
     
     private String getCurrentUserBuildingId(Resident user) {
-        // Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
-        if (user.getApartment() != null) {
-            return user.getApartment().getBuilding().getBuildingId();
-        }
-        
-        // Sinon, chercher dans les relations ResidentBuilding
+        // Chercher dans les relations ResidentBuilding en priorité
         List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
         if (!userBuildings.isEmpty()) {
             return userBuildings.get(0).getBuilding().getBuildingId();
+        }
+        
+        // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
+        if (user.getApartment() != null) {
+            return user.getApartment().getBuilding().getBuildingId();
         }
         
         return null;

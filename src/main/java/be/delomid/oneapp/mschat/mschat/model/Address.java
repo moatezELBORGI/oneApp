@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(exclude = {"pays"})
+@ToString(exclude = {"pays"})
 public class Address {
     
     @Id

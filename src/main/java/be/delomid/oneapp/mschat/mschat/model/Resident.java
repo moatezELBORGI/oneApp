@@ -23,6 +23,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(exclude = {"apartment", "residentBuildings"})
+@ToString(exclude = {"apartment", "residentBuildings"})
 public class Resident implements UserDetails {
     
     @Id

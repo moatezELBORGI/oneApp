@@ -15,6 +15,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(exclude = {"resident", "building", "apartment"})
+@ToString(exclude = {"resident", "building", "apartment"})
 public class ResidentBuilding {
 
     @Id
