@@ -10,12 +10,12 @@ import java.util.List;
 
 @Repository
 public interface UserVoteRepository extends JpaRepository<UserVote, Long> {
-    
+
     @Query("SELECT uv FROM UserVote uv WHERE uv.vote.id = :voteId AND uv.userId = :userId")
     List<UserVote> findByVoteIdAndUserId(@Param("voteId") Long voteId, @Param("userId") String userId);
-    
+
     @Query("SELECT COUNT(uv) FROM UserVote uv WHERE uv.vote.id = :voteId")
     Long countByVoteId(@Param("voteId") Long voteId);
-    
+
     boolean existsByVoteIdAndUserId(Long voteId, String userId);
 }

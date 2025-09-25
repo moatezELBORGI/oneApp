@@ -76,24 +76,24 @@ public class ChannelController {
         channelService.leaveChannel(channelId, userId);
         return ResponseEntity.ok().build();
     }
-    
+
     @PostMapping("/{channelId}/members/{memberId}")
     public ResponseEntity<ChannelDto> addMemberToChannel(
             @PathVariable Long channelId,
             @PathVariable String memberId,
             Authentication authentication) {
-        
+
         String adminId = getUserId(authentication);
         ChannelDto channel = channelService.addMemberToChannel(channelId, memberId, adminId);
         return ResponseEntity.ok(channel);
     }
-    
+
     @DeleteMapping("/{channelId}/members/{memberId}")
     public ResponseEntity<Void> removeMemberFromChannel(
             @PathVariable Long channelId,
             @PathVariable String memberId,
             Authentication authentication) {
-        
+
         String adminId = getUserId(authentication);
         channelService.removeMemberFromChannel(channelId, memberId, adminId);
         return ResponseEntity.ok().build();

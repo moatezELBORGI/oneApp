@@ -56,6 +56,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**").permitAll()
                         // Info endpoints
                         .requestMatchers("/info/**").permitAll()
+                        // File endpoints - allow public access for images
+                        .requestMatchers("/files/**").permitAll()
                         // Public channels
                         .requestMatchers("/channels/public/**").permitAll()
                         // Admin endpoints

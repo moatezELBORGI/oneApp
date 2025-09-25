@@ -40,7 +40,7 @@ class AudioService {
 
   Future<String?> startRecording() async {
     print('DEBUG: Starting audio recording...');
-    
+
     if (!await requestPermissions()) {
       print('DEBUG: Microphone permission denied');
       return null;
@@ -48,15 +48,15 @@ class AudioService {
 
     try {
       await _initializeRecorder();
-      
+
       if (_recorder == null) {
         print('DEBUG: Recorder not ready');
         return null;
       }
 
       final directory = await getTemporaryDirectory();
-      final filePath = '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.aac';
-      
+      final filePath = '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.aac';
+
       print('DEBUG: Recording to path: $filePath');
 
       await _recorder!.startRecorder(
@@ -80,7 +80,7 @@ class AudioService {
 
   Future<void> stopRecording() async {
     print('DEBUG: Stopping audio recording...');
-    
+
     try {
       if (_recorder != null && _isRecording) {
         await _recorder!.stopRecorder();
@@ -96,13 +96,13 @@ class AudioService {
 
   Future<void> cancelRecording() async {
     print('DEBUG: Cancelling audio recording...');
-    
+
     try {
       if (_recorder != null && _isRecording) {
         await _recorder!.stopRecorder();
       }
       _isRecording = false;
-      
+
       // Supprimer le fichier si il existe
       if (_currentRecordingPath != null) {
         final file = File(_currentRecordingPath!);

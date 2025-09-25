@@ -61,9 +61,9 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
             onPressed: () {
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
               final user = authProvider.user;
-              
-              if (user?.role == 'BUILDING_ADMIN' || 
-                  user?.role == 'GROUP_ADMIN' || 
+
+              if (user?.role == 'BUILDING_ADMIN' ||
+                  user?.role == 'GROUP_ADMIN' ||
                   user?.role == 'SUPER_ADMIN') {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -149,9 +149,9 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
                   onPressed: () {
                     final authProvider = Provider.of<AuthProvider>(context, listen: false);
                     final user = authProvider.user;
-                    
-                    if (user?.role == 'BUILDING_ADMIN' || 
-                        user?.role == 'GROUP_ADMIN' || 
+
+                    if (user?.role == 'BUILDING_ADMIN' ||
+                        user?.role == 'GROUP_ADMIN' ||
                         user?.role == 'SUPER_ADMIN') {
                       Navigator.of(context).push(
                         MaterialPageRoute(

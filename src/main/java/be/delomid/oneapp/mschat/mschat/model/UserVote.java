@@ -20,22 +20,22 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(exclude = {"vote", "voteOption"})
 @ToString(exclude = {"vote", "voteOption"})
 public class UserVote {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vote_id", nullable = false)
     private Vote vote;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vote_option_id", nullable = false)
     private VoteOption voteOption;
-    
+
     @Column(name = "user_id", nullable = false)
     private String userId;
-    
+
     @CreationTimestamp
     @Column(name = "voted_at", nullable = false, updatable = false)
     private LocalDateTime votedAt;

@@ -158,89 +158,81 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildImageMessage() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth;
-        final imageWidth = (maxWidth * 0.9).clamp(150.0, 280.0);
-        final imageHeight = imageWidth * 0.75; // Ratio 4:3
-    
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                message.content,
-                width: imageWidth,
-                height: imageHeight,
-                fit: BoxFit.cover,
-                headers: const {
-                  'Accept': 'image/*',
-                },
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    width: imageWidth,
-                    height: imageHeight,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${((loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)) * 100).toInt()}%',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            message.content,
+            width: 200,
+            height: 150,
+            fit: BoxFit.cover,
+            headers: const {
+              'Accept': 'image/*',
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                width: 200,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${((loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)) * 100).toInt()}%',
+                        style: const TextStyle(fontSize: 12),
                       ),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  print('Error loading image: $error');
-                  return Container(
-                    width: imageWidth,
-                    height: imageHeight,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.image_not_supported,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Image non disponible',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-          ],
-        );
-      },
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              print('Error loading image: $error');
+              return Container(
+                width: 200,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.image_not_supported,
+                      size: 40,
+                      color: Colors.grey,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Image non disponible',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildFileMessage(BuildContext context) {
-    final fileName = message.fileAttachment?.originalFilename ?? 
-                    message.content.split('/').last.split('?').first;
+    final fileName = message.fileAttachment?.originalFilename ??
+        message.content.split('/').last.split('?').first;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -316,8 +308,8 @@ class MessageBubble extends StatelessWidget {
 
       // Obtenir le répertoire de téléchargement
       final directory = await getApplicationDocumentsDirectory();
-      final fileName = message.fileAttachment?.originalFilename ?? 
-                      'file_${DateTime.now().millisecondsSinceEpoch}';
+      final fileName = message.fileAttachment?.originalFilename ??
+          'file_${DateTime.now().millisecondsSinceEpoch}';
       final filePath = '${directory.path}/$fileName';
 
       // Télécharger le fichier
@@ -353,7 +345,7 @@ class MessageBubble extends StatelessWidget {
     } catch (e) {
       // Fermer l'indicateur de chargement en cas d'erreur
       if (context.mounted) Navigator.of(context).pop();
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -460,7 +452,7 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
         // Télécharger le fichier
         final dio = Dio();
         await dio.download(widget.audioUrl, filePath);
-        
+
         _localFilePath = filePath;
         await _setAudioSource();
       } else {
@@ -468,7 +460,7 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
         _localFilePath = widget.audioUrl;
         await _setAudioSource();
       }
-      
+
     } catch (e) {
       print('Error downloading audio file: $e');
       if (mounted) {
@@ -481,20 +473,20 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
 
   Future<void> _setAudioSource() async {
     if (_localFilePath == null) return;
-    
+
     try {
       // Vérifier que le fichier existe
       final file = File(_localFilePath!);
       if (!await file.exists()) {
         throw Exception('Audio file not found: $_localFilePath');
       }
-      
+
       // Vérifier la taille du fichier
       final fileSize = await file.length();
       if (fileSize == 0) {
         throw Exception('Audio file is empty');
       }
-      
+
       print('Audio file exists: $_localFilePath, size: $fileSize bytes');
       await _audioPlayer.setSourceDeviceFile(_localFilePath!);
       print('Audio source set successfully: $_localFilePath');
@@ -599,27 +591,27 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: widget.isMe 
-                    ? Colors.white.withOpacity(0.2) 
+                color: widget.isMe
+                    ? Colors.white.withOpacity(0.2)
                     : AppTheme.primaryColor.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: _isLoading
                   ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          widget.isMe ? Colors.white : AppTheme.primaryColor,
-                        ),
-                      ),
-                    )
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    widget.isMe ? Colors.white : AppTheme.primaryColor,
+                  ),
+                ),
+              )
                   : Icon(
-                      _isPlaying ? Icons.pause : Icons.play_arrow,
-                      color: widget.isMe ? Colors.white : AppTheme.primaryColor,
-                      size: 20,
-                    ),
+                _isPlaying ? Icons.pause : Icons.play_arrow,
+                color: widget.isMe ? Colors.white : AppTheme.primaryColor,
+                size: 20,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -648,24 +640,24 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
                     ),
                     child: _duration.inMilliseconds > 0
                         ? LinearProgressIndicator(
-                            value: _position.inMilliseconds / _duration.inMilliseconds,
-                            backgroundColor: Colors.transparent,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              widget.isMe ? Colors.white70 : AppTheme.primaryColor,
-                            ),
-                          )
+                      value: _position.inMilliseconds / _duration.inMilliseconds,
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        widget.isMe ? Colors.white70 : AppTheme.primaryColor,
+                      ),
+                    )
                         : LinearProgressIndicator(
-                            backgroundColor: Colors.transparent,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              widget.isMe ? Colors.white70 : AppTheme.primaryColor,
-                            ),
-                          ),
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        widget.isMe ? Colors.white70 : AppTheme.primaryColor,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 // Durée
                 Text(
-                  _duration.inMilliseconds > 0 
+                  _duration.inMilliseconds > 0
                       ? '${_formatDuration(_position)} / ${_formatDuration(_duration)}'
                       : _isLoading ? 'Chargement...' : 'Message vocal',
                   style: TextStyle(

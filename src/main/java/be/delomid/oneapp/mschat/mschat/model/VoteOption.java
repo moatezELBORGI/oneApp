@@ -20,18 +20,18 @@ import java.util.Set;
 @EqualsAndHashCode(exclude = {"vote", "userVotes"})
 @ToString(exclude = {"vote", "userVotes"})
 public class VoteOption {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false)
     private String text;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vote_id", nullable = false)
     private Vote vote;
-    
+
     @OneToMany(mappedBy = "voteOption", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<UserVote> userVotes = new HashSet<>();

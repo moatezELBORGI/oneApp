@@ -154,7 +154,7 @@ class ApiService {
 
     _handleVoidResponse(response);
   }
-  
+
   // Vote endpoints
   Future<Map<String, dynamic>> createVote(Map<String, dynamic> voteData) async {
     final response = await http.post(
@@ -165,7 +165,7 @@ class ApiService {
 
     return _handleResponse(response);
   }
-  
+
   Future<void> submitVote(Map<String, dynamic> voteData) async {
     final response = await http.post(
       Uri.parse('$baseUrl/votes/submit'),
@@ -175,7 +175,7 @@ class ApiService {
 
     _handleVoidResponse(response);
   }
-  
+
   Future<List<dynamic>> getChannelVotes(int channelId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/votes/channel/$channelId'),
@@ -184,7 +184,7 @@ class ApiService {
 
     return _handleListResponse(response);
   }
-  
+
   Future<Map<String, dynamic>> getVote(int voteId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/votes/$voteId'),
@@ -193,7 +193,7 @@ class ApiService {
 
     return _handleResponse(response);
   }
-  
+
   Future<Map<String, dynamic>> closeVote(int voteId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/votes/$voteId/close'),
@@ -202,7 +202,7 @@ class ApiService {
 
     return _handleResponse(response);
   }
-  
+
   // Channel member management
   Future<Map<String, dynamic>> addMemberToChannel(int channelId, String memberId) async {
     final response = await http.post(
@@ -212,7 +212,7 @@ class ApiService {
 
     return _handleResponse(response);
   }
-  
+
   Future<void> removeMemberFromChannel(int channelId, String memberId) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/channels/$channelId/members/$memberId'),

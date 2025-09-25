@@ -107,21 +107,13 @@ class _OtpScreenState extends State<OtpScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 40),
 
-                      // Icon
-                      Center(
+              // Icon
+              Center(
                 child: Container(
                   width: 80,
                   height: 80,
@@ -137,10 +129,10 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
               ),
 
-                      const SizedBox(height: 24),
+              const SizedBox(height: 30),
 
-                      // Title and Description
-                      const Text(
+              // Title and Description
+              const Text(
                 'Code de vérification',
                 style: TextStyle(
                   fontSize: 24,
@@ -161,10 +153,10 @@ class _OtpScreenState extends State<OtpScreen> {
                 textAlign: TextAlign.center,
               ),
 
-                      const SizedBox(height: 32),
+              const SizedBox(height: 40),
 
-                      // OTP Input Fields
-                      Row(
+              // OTP Input Fields
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(6, (index) {
                   return SizedBox(
@@ -203,10 +195,10 @@ class _OtpScreenState extends State<OtpScreen> {
                 }),
               ),
 
-                      const SizedBox(height: 32),
+              const SizedBox(height: 40),
 
-                      // Verify Button
-                      Consumer<AuthProvider>(
+              // Verify Button
+              Consumer<AuthProvider>(
                 builder: (context, authProvider, child) {
                   return CustomButton(
                     text: 'Vérifier',
@@ -216,8 +208,8 @@ class _OtpScreenState extends State<OtpScreen> {
                 },
               ),
 
-                      // Error Message
-                      Consumer<AuthProvider>(
+              // Error Message
+              Consumer<AuthProvider>(
                 builder: (context, authProvider, child) {
                   if (authProvider.error != null) {
                     return Container(
@@ -241,10 +233,10 @@ class _OtpScreenState extends State<OtpScreen> {
                 },
               ),
 
-                      const SizedBox(height: 24),
+              const SizedBox(height: 30),
 
-                      // Resend Code
-                      Row(
+              // Resend Code
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
@@ -257,14 +249,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                 ],
               ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
             ],
-            ),
           ),
         ),
       ),

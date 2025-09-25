@@ -19,7 +19,7 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final List<User> _selectedMembers = [];
-  
+
   bool _isPrivate = true;
 
   @override
@@ -40,7 +40,7 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
   void _loadBuildingResidents() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    
+
     if (authProvider.user?.buildingId != null) {
       channelProvider.loadBuildingResidents(authProvider.user!.buildingId!);
     }
@@ -59,7 +59,7 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
       }
 
       final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-      
+
       final channelData = {
         'name': _nameController.text.trim(),
         'description': _descriptionController.text.trim(),
@@ -69,7 +69,7 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
       };
 
       final channel = await channelProvider.createChannel(channelData);
-      
+
       if (channel != null && mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -200,9 +200,9 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
     // Vérifier si l'utilisateur est admin
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
-    
-    if (user?.role != 'BUILDING_ADMIN' && 
-        user?.role != 'GROUP_ADMIN' && 
+
+    if (user?.role != 'BUILDING_ADMIN' &&
+        user?.role != 'GROUP_ADMIN' &&
         user?.role != 'SUPER_ADMIN') {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -242,7 +242,6 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
     }
 
     return Scaffold(
-      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Créer un canal'),
@@ -252,7 +251,6 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -273,9 +271,9 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Sujet (obligatoire)
               CustomTextField(
                 controller: _descriptionController,
@@ -293,14 +291,14 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Membres sélectionnés
               _buildSelectedMembers(),
-              
+
               const SizedBox(height: 20),
-              
+
               // Ajouter des membres
               Container(
                 decoration: BoxDecoration(
@@ -315,9 +313,9 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
                   onTap: _showMemberSelection,
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Paramètres de confidentialité
               Container(
                 decoration: BoxDecoration(
@@ -336,9 +334,9 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
                   activeColor: AppTheme.primaryColor,
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Create Button
               Consumer<ChannelProvider>(
                 builder: (context, channelProvider, child) {
@@ -350,7 +348,7 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
                   );
                 },
               ),
-              
+
               // Error Message
               Consumer<ChannelProvider>(
                 builder: (context, channelProvider, child) {

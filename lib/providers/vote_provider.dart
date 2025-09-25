@@ -32,7 +32,7 @@ class VoteProvider with ChangeNotifier {
           .toList();
 
       _channelVotes[channelId] = votes;
-      
+
       // Mettre à jour le cache des votes individuels
       for (final vote in votes) {
         _votes[vote.id] = vote;
@@ -49,9 +49,9 @@ class VoteProvider with ChangeNotifier {
     try {
       final response = await _apiService.getVote(voteId);
       final vote = Vote.fromJson(response);
-      
+
       _votes[voteId] = vote;
-      
+
       // Mettre à jour dans la liste des canaux aussi
       for (final channelId in _channelVotes.keys) {
         final channelVotes = _channelVotes[channelId]!;
@@ -61,7 +61,7 @@ class VoteProvider with ChangeNotifier {
           break;
         }
       }
-      
+
       notifyListeners();
     } catch (e) {
       _setError(e.toString());
@@ -80,9 +80,9 @@ class VoteProvider with ChangeNotifier {
       final channelVotes = _channelVotes[channelId] ?? [];
       channelVotes.insert(0, vote);
       _channelVotes[channelId] = channelVotes;
-      
+
       _votes[vote.id] = vote;
-      
+
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -98,11 +98,11 @@ class VoteProvider with ChangeNotifier {
 
     try {
       await _apiService.submitVote(voteData);
-      
+
       // Recharger les détails du vote pour avoir les résultats mis à jour
       final voteId = voteData['voteId'] as int;
       await loadVoteDetails(voteId);
-      
+
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -119,9 +119,9 @@ class VoteProvider with ChangeNotifier {
     try {
       final response = await _apiService.closeVote(voteId);
       final updatedVote = Vote.fromJson(response);
-      
+
       _votes[voteId] = updatedVote;
-      
+
       // Mettre à jour dans la liste des canaux
       for (final channelId in _channelVotes.keys) {
         final channelVotes = _channelVotes[channelId]!;
@@ -131,7 +131,7 @@ class VoteProvider with ChangeNotifier {
           break;
         }
       }
-      
+
       return true;
     } catch (e) {
       _setError(e.toString());

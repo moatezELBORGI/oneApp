@@ -57,7 +57,7 @@ public class MessageService {
             if (fileAttachment != null) {
                 // Pour les images, utiliser l'URL complète
                 if (fileAttachment.getFileType() == FileType.IMAGE) {
-                    content = "http://localhost:9090/api/v1/files/" + fileAttachment.getStoredFilename();
+                    content = "http://192.168.1.8:9090/api/v1/files/" + fileAttachment.getStoredFilename();
                 } else {
                     content = fileAttachment.getOriginalFilename();
                 }
@@ -65,7 +65,7 @@ public class MessageService {
                 throw new IllegalArgumentException("Message content or file attachment is required");
             }
         }
-        
+
         Message message = Message.builder()
                 .channel(channel)
                 .senderId(senderId)
@@ -137,16 +137,29 @@ public class MessageService {
     }
 
     private void validateWriteAccess(Long channelId, String userId) {
-        log.info("userid mn message service:"+userId);
-        Optional<Resident> resident=residentRepository.findByEmail(userId);
-        ChannelMember member = channelMemberRepository
-                .findByChannelIdAndUserId(channelId, resident.get().getIdUsers())
+        log.info("userid mn message service1: {}", userId);
+
+        // Essayer de trouver par email → idUsers
+        Optional<Resident> residentOpt = residentRepository.findByEmail(userId);
+
+        Optional<ChannelMember> memberByResidentId = residentOpt
+                .flatMap(resident -> channelMemberRepository.findByChannelIdAndUserId(channelId, resident.getIdUsers()));
+
+        // Essayer directement avec userId (si déjà un id)
+        Optional<ChannelMember> memberByUserId = channelMemberRepository.findByChannelIdAndUserId(channelId, userId);
+
+        // Fusionner les deux
+        ChannelMember member = memberByResidentId.or(() -> memberByUserId)
                 .orElseThrow(() -> new UnauthorizedAccessException("User is not a member of this channel"));
 
+        log.info("validateWriteAccess -> found member with id: {}", member.getId());
+
+        // Vérifier les droits
         if (!member.getIsActive() || !member.getCanWrite()) {
             throw new UnauthorizedAccessException("User does not have write access to this channel");
         }
     }
+
 
     private boolean isChannelAdmin(Long channelId, String userId) {
         return channelMemberRepository.findByChannelIdAndUserId(channelId, userId)
@@ -158,7 +171,7 @@ public class MessageService {
         FileAttachmentDto fileAttachmentDto = null;
         if (message.getFileAttachment() != null) {
             FileAttachment file = message.getFileAttachment();
-            String baseUrl = "http://localhost:9090/api/v1/files/";
+            String baseUrl = "http://192.168.1.8:9090/api/v1/files/";
 
             fileAttachmentDto = FileAttachmentDto.builder()
                     .id(file.getId())

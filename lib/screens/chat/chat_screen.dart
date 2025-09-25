@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mgi/screens/vote/vote_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -12,7 +13,6 @@ import '../../models/message_model.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/typing_indicator.dart';
 import '../../services/audio_service.dart';
-import '../votes/vote_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final Channel channel;
@@ -188,7 +188,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (_recordingPath == null) {
         throw Exception('Impossible de démarrer l\'enregistrement');
       }
-      
+
       print('DEBUG: Recording started at path: $_recordingPath');
     } catch (e) {
       print('DEBUG: Error starting recording: $e');
@@ -211,7 +211,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       await audioService.stopRecording();
-      
+
       setState(() {
         _isRecording = false;
       });
@@ -266,7 +266,6 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.grey[50],
       appBar: _buildAppBar(),
       body: Column(
@@ -446,12 +445,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageInput() {
     return Container(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 12,
-        bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 8 : 16,
-      ),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -463,8 +457,6 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
       child: SafeArea(
-        top: false,
-        bottom: true,
         child: Row(
           children: [
             _buildAttachmentButton(),
@@ -546,7 +538,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMicrophoneButton() {
-    return _isRecording 
+    return _isRecording
         ? _buildRecordingControls()
         : GestureDetector(
       key: const ValueKey('mic'),
@@ -589,9 +581,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
-        
+
         const SizedBox(width: 8),
-        
+
         // Indicateur d'enregistrement
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -622,9 +614,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
         ),
-        
+
         const SizedBox(width: 8),
-        
+
         // Bouton Envoyer
         GestureDetector(
           onTap: _stopRecording,

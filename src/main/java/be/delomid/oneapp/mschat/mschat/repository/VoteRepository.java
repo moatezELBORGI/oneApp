@@ -11,12 +11,12 @@ import java.util.List;
 
 @Repository
 public interface VoteRepository extends JpaRepository<Vote, Long> {
-    
+
     List<Vote> findByChannelIdOrderByCreatedAtDesc(Long channelId);
-    
+
     @Query("SELECT v FROM Vote v WHERE v.channel.id = :channelId AND v.isActive = true")
     List<Vote> findActiveVotesByChannelId(@Param("channelId") Long channelId);
-    
+
     @Query("SELECT v FROM Vote v WHERE v.endDate < :now AND v.isActive = true")
     List<Vote> findExpiredActiveVotes(@Param("now") LocalDateTime now);
 }
