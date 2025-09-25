@@ -4,6 +4,7 @@ import be.delomid.oneapp.mschat.mschat.config.JwtConfig;
 import be.delomid.oneapp.mschat.mschat.dto.*;
 import be.delomid.oneapp.mschat.mschat.model.*;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
+import be.delomid.oneapp.mschat.mschat.repository.ResidentBuildingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +24,7 @@ public class AuthService {
     private final JwtConfig jwtConfig;
     private final OtpService otpService;
     private final EmailService emailService;
+    private final ResidentBuildingRepository residentBuildingRepository;
     
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -133,14 +135,71 @@ public class AuthService {
         Resident resident = residentRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
         
-        // Générer les tokens JWT
+        // Vérifier si l'utilisateur a plusieurs bâtiments
+        List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(resident.getIdUsers());
+        
+        if (userBuildings.size() > 1) {
+            // L'utilisateur a plusieurs bâtiments, il doit choisir
+            return AuthResponse.builder()
+                    .userId(resident.getIdUsers())
+                    .email(resident.getEmail())
+                    .fname(resident.getFname())
+                    .lname(resident.getLname())
+                    .role(resident.getRole())
+                    .accountStatus(resident.getAccountStatus())
+                    .otpRequired(false)
+                    .message("Veuillez sélectionner un bâtiment")
+                    .build();
+        } else if (userBuildings.size() == 1) {
+            // Un seul bâtiment, connexion directe
+            ResidentBuilding residentBuilding = userBuildings.get(0);
+            return generateTokenForBuilding(resident, residentBuilding);
+        } else {
+            // Aucun bâtiment assigné, utiliser l'ancien système
+            return generateLegacyToken(resident);
+        }
+    }
+    
+    private AuthResponse generateTokenForBuilding(Resident resident, ResidentBuilding residentBuilding) {
         String token = jwtConfig.generateToken(
-                resident.getEmail(), 
-                resident.getIdUsers(), 
+                resident.getEmail(),
+                resident.getIdUsers(),
+                residentBuilding.getRoleInBuilding().name()
+        );
+        String refreshToken = jwtConfig.generateRefreshToken(
+                resident.getEmail(),
+                resident.getIdUsers()
+        );
+        
+        String apartmentId = null;
+        if (residentBuilding.getApartment() != null) {
+            apartmentId = residentBuilding.getApartment().getIdApartment();
+        }
+        
+        return AuthResponse.builder()
+                .token(token)
+                .refreshToken(refreshToken)
+                .userId(resident.getIdUsers())
+                .email(resident.getEmail())
+                .fname(resident.getFname())
+                .lname(resident.getLname())
+                .role(resident.getRole())
+                .accountStatus(resident.getAccountStatus())
+                .buildingId(residentBuilding.getBuilding().getBuildingId())
+                .apartmentId(apartmentId)
+                .otpRequired(false)
+                .message("Connexion réussie")
+                .build();
+    }
+    
+    private AuthResponse generateLegacyToken(Resident resident) {
+        String token = jwtConfig.generateToken(
+                resident.getEmail(),
+                resident.getIdUsers(),
                 resident.getRole().name()
         );
         String refreshToken = jwtConfig.generateRefreshToken(
-                resident.getEmail(), 
+                resident.getEmail(),
                 resident.getIdUsers()
         );
         

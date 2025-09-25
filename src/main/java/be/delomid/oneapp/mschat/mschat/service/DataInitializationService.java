@@ -6,6 +6,7 @@ import be.delomid.oneapp.mschat.mschat.repository.ApartmentRepository;
 import be.delomid.oneapp.mschat.mschat.repository.BuildingRepository;
 import be.delomid.oneapp.mschat.mschat.repository.CountryRepository;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
+import be.delomid.oneapp.mschat.mschat.repository.ResidentBuildingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -27,6 +28,7 @@ public class DataInitializationService implements CommandLineRunner {
     private final ResidentRepository residentRepository;
     private final BuildingRepository buildingRepository;
     private final ApartmentRepository apartmentRepository;
+    private final ResidentBuildingRepository residentBuildingRepository;
     private final PasswordEncoder passwordEncoder;
     private final AppConfig appConfig;
 
@@ -186,12 +188,57 @@ public class DataInitializationService implements CommandLineRunner {
             apartmentRepository.save(apartment1);
             apartmentRepository.save(apartment2);
 
+            // Créer les relations ResidentBuilding
+            ResidentBuilding residentBuilding1 = ResidentBuilding.builder()
+                    .resident(resident1)
+                    .building(testBuilding)
+                    .apartment(apartment1)
+                    .roleInBuilding(UserRole.RESIDENT)
+                    .build();
+
+            ResidentBuilding residentBuilding2 = ResidentBuilding.builder()
+                    .resident(resident2)
+                    .building(testBuilding)
+                    .apartment(apartment2)
+                    .roleInBuilding(UserRole.RESIDENT)
+                    .build();
+
+            residentBuildingRepository.save(residentBuilding1);
+            residentBuildingRepository.save(residentBuilding2);
+
+            // Créer un deuxième bâtiment pour tester le multi-bâtiment
+            Building testBuilding2 = Building.builder()
+                    .buildingId("FRA-2024-TEST2")
+                    .buildingLabel("Résidence Test 2")
+                    .buildingNumber("456")
+                    .yearOfConstruction(2022)
+                    .address(Address.builder()
+                            .address("456 Avenue des Champs")
+                            .codePostal("75008")
+                            .ville("Paris")
+                            .pays(france)
+                            .build())
+                    .build();
+
+            testBuilding2 = buildingRepository.save(testBuilding2);
+
+            // Ajouter resident1 comme admin du deuxième bâtiment
+            ResidentBuilding residentBuilding1Admin = ResidentBuilding.builder()
+                    .resident(resident1)
+                    .building(testBuilding2)
+                    .roleInBuilding(UserRole.BUILDING_ADMIN)
+                    .build();
+
+            residentBuildingRepository.save(residentBuilding1Admin);
+
             log.info("Test data created:");
             log.info("- Building: {} (ID: {})", testBuilding.getBuildingLabel(), testBuilding.getBuildingId());
+            log.info("- Building 2: {} (ID: {})", testBuilding2.getBuildingLabel(), testBuilding2.getBuildingId());
             log.info("- Resident 1: {} {} - Email: {} - Apartment: {}",
                     resident1.getFname(), resident1.getLname(), resident1.getEmail(), apartment1.getApartmentNumber());
             log.info("- Resident 2: {} {} - Email: {} - Apartment: {}",
                     resident2.getFname(), resident2.getLname(), resident2.getEmail(), apartment2.getApartmentNumber());
+            log.info("- Resident 1 is also admin of building 2");
             log.info("Password for both test residents: password123");
         }
     }

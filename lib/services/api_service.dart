@@ -79,6 +79,27 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  Future<List<dynamic>> getUserBuildings() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/auth/user-buildings'),
+      headers: await _getHeaders(),
+    );
+
+    return _handleListResponse(response);
+  }
+
+  Future<Map<String, dynamic>> selectBuilding(String buildingId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/select-building'),
+      headers: await _getHeaders(),
+      body: jsonEncode({
+        'buildingId': buildingId,
+      }),
+    );
+
+    return _handleResponse(response);
+  }
+
   // Channel endpoints
   Future<Map<String, dynamic>> getChannels({int page = 0, int size = 20}) async {
     final response = await http.get(

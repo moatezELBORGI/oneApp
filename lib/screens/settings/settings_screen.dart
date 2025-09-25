@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
+import 'building_switch_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -45,10 +46,14 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 _buildSettingsItem(
                   icon: Icons.apartment,
-                  title: 'Mon appartement',
-                  subtitle: 'Informations sur votre logement',
+                  title: 'Changer d\'immeuble',
+                  subtitle: 'Sélectionner un autre immeuble',
                   onTap: () {
-                    // Navigate to apartment screen
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const BuildingSwitchScreen(),
+                      ),
+                    );
                   },
                 ),
               ],

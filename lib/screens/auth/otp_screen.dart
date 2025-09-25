@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/custom_button.dart';
+import 'building_selection_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String email;
@@ -71,7 +72,19 @@ class _OtpScreenState extends State<OtpScreen> {
 
     if (success && mounted) {
       if (widget.isLogin) {
-        Navigator.of(context).pushReplacementNamed('/main');
+        // Vérifier si l'utilisateur doit sélectionner un bâtiment
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final buildings = await authProvider.getUserBuildings();
+        
+        if (buildings.length > 1) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const BuildingSelectionScreen(),
+            ),
+          );
+        } else {
+          Navigator.of(context).pushReplacementNamed('/main');
+        }
       } else {
         // Registration verified, go to login
         Navigator.of(context).pushReplacementNamed('/login');

@@ -104,6 +104,12 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> _handleLoginSuccess(Map<String, dynamic> response) async {
+    // Vérifier si l'utilisateur doit sélectionner un bâtiment
+    if (response['message'] == 'Veuillez sélectionner un bâtiment') {
+      // Naviguer vers l'écran de sélection de bâtiment
+      return;
+    }
+    
     final token = response['token'];
     final refreshToken = response['refreshToken'];
 
@@ -121,6 +127,31 @@ class AuthProvider with ChangeNotifier {
 
     await _connectWebSocket();
     notifyListeners();
+  }
+
+  Future<bool> selectBuilding(String buildingId) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _apiService.selectBuilding(buildingId);
+      await _handleLoginSuccess(response);
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<List<dynamic>> getUserBuildings() async {
+    try {
+      return await _apiService.getUserBuildings();
+    } catch (e) {
+      _setError(e.toString());
+      return [];
+    }
   }
 
   Future<void> _connectWebSocket() async {

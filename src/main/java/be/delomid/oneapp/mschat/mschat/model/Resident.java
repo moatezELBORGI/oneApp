@@ -12,6 +12,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Collection;
 import java.util.List;
 
@@ -79,6 +81,10 @@ public class Resident implements UserDetails {
     
     @OneToOne(mappedBy = "resident", fetch = FetchType.LAZY)
     private Apartment apartment;
+    
+    @OneToMany(mappedBy = "resident", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
+    private Set<ResidentBuilding> residentBuildings = new HashSet<>();
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
