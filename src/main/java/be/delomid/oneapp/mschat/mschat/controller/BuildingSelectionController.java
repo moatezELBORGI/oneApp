@@ -21,7 +21,7 @@ public class BuildingSelectionController {
 
     @GetMapping("/user-buildings")
     public ResponseEntity<List<BuildingSelectionDto>> getUserBuildings(Authentication authentication) {
-        String userId = authentication.getName();
+        String userId = getUserId(authentication);
         List<BuildingSelectionDto> buildings = buildingSelectionService.getUserBuildings(userId);
         return ResponseEntity.ok(buildings);
     }
@@ -31,8 +31,15 @@ public class BuildingSelectionController {
             @Valid @RequestBody SelectBuildingRequest request,
             Authentication authentication) {
         
-        String userId = authentication.getName();
+        String userId = getUserId(authentication);
         AuthResponse response = buildingSelectionService.selectBuilding(userId, request.getBuildingId());
         return ResponseEntity.ok(response);
+    }
+
+    private String getUserId(Authentication authentication) {
+        if (authentication == null) {
+            throw new IllegalArgumentException("Authentication required");
+        }
+        return authentication.getName();
     }
 }

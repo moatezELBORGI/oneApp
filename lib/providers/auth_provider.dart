@@ -106,7 +106,17 @@ class AuthProvider with ChangeNotifier {
   Future<void> _handleLoginSuccess(Map<String, dynamic> response) async {
     // Vérifier si l'utilisateur doit sélectionner un bâtiment
     if (response['message'] == 'Veuillez sélectionner un bâtiment') {
-      // Naviguer vers l'écran de sélection de bâtiment
+      // Sauvegarder le token temporaire pour permettre l'accès aux endpoints de sélection
+      final token = response['token'];
+      if (token != null) {
+        await StorageService.saveToken(token);
+      }
+      
+      // Créer un utilisateur temporaire pour la navigation
+      _user = User.fromJson(response);
+      _currentUserId = _user!.id;
+      await StorageService.saveUser(_user!);
+      notifyListeners();
       return;
     }
     

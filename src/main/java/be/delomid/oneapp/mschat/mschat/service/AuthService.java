@@ -138,9 +138,17 @@ public class AuthService {
         // Vérifier si l'utilisateur a plusieurs bâtiments
         List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(resident.getIdUsers());
         
+        // Générer un token temporaire pour permettre l'accès aux endpoints de sélection de bâtiment
+        String tempToken = jwtConfig.generateToken(
+                resident.getEmail(),
+                resident.getIdUsers(),
+                resident.getRole().name()
+        );
+        
         if (userBuildings.size() > 1) {
             // L'utilisateur a plusieurs bâtiments, il doit choisir
             return AuthResponse.builder()
+                    .token(tempToken) // Token temporaire pour accéder aux endpoints de sélection
                     .userId(resident.getIdUsers())
                     .email(resident.getEmail())
                     .fname(resident.getFname())

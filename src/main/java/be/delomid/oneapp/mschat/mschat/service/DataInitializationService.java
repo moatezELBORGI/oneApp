@@ -231,14 +231,58 @@ public class DataInitializationService implements CommandLineRunner {
 
             residentBuildingRepository.save(residentBuilding1Admin);
 
+            // Créer un troisième bâtiment pour tester avec resident1 comme résident simple
+            Building testBuilding3 = Building.builder()
+                    .buildingId("FRA-2024-TEST3")
+                    .buildingLabel("Résidence Test 3")
+                    .buildingNumber("789")
+                    .yearOfConstruction(2023)
+                    .address(Address.builder()
+                            .address("789 Boulevard Saint-Germain")
+                            .codePostal("75006")
+                            .ville("Paris")
+                            .pays(france)
+                            .build())
+                    .build();
+
+            testBuilding3 = buildingRepository.save(testBuilding3);
+
+            // Créer un appartement dans le troisième bâtiment
+            Apartment apartment3 = Apartment.builder()
+                    .idApartment("FRA-2024-TEST3-A201")
+                    .apartmentLabel("Appartement 201")
+                    .apartmentNumber("201")
+                    .apartmentFloor(2)
+                    .livingAreaSurface(new BigDecimal("75.0"))
+                    .numberOfRooms(4)
+                    .numberOfBedrooms(3)
+                    .haveBalconyOrTerrace(true)
+                    .isFurnished(false)
+                    .building(testBuilding3)
+                    .build();
+
+            apartment3 = apartmentRepository.save(apartment3);
+
+            // Ajouter resident1 comme résident du troisième bâtiment
+            ResidentBuilding residentBuilding1Resident = ResidentBuilding.builder()
+                    .resident(resident1)
+                    .building(testBuilding3)
+                    .apartment(apartment3)
+                    .roleInBuilding(UserRole.RESIDENT)
+                    .build();
+
+            residentBuildingRepository.save(residentBuilding1Resident);
+
             log.info("Test data created:");
             log.info("- Building: {} (ID: {})", testBuilding.getBuildingLabel(), testBuilding.getBuildingId());
             log.info("- Building 2: {} (ID: {})", testBuilding2.getBuildingLabel(), testBuilding2.getBuildingId());
+            log.info("- Building 3: {} (ID: {})", testBuilding3.getBuildingLabel(), testBuilding3.getBuildingId());
             log.info("- Resident 1: {} {} - Email: {} - Apartment: {}",
                     resident1.getFname(), resident1.getLname(), resident1.getEmail(), apartment1.getApartmentNumber());
             log.info("- Resident 2: {} {} - Email: {} - Apartment: {}",
                     resident2.getFname(), resident2.getLname(), resident2.getEmail(), apartment2.getApartmentNumber());
             log.info("- Resident 1 is also admin of building 2");
+            log.info("- Resident 1 is also resident of building 3 (apartment 201)");
             log.info("Password for both test residents: password123");
         }
     }

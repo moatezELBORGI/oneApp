@@ -74,9 +74,24 @@ class _OtpScreenState extends State<OtpScreen> {
       if (widget.isLogin) {
         // Vérifier si l'utilisateur doit sélectionner un bâtiment
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final buildings = await authProvider.getUserBuildings();
         
-        if (buildings.length > 1) {
+        // Vérifier le message de réponse pour savoir si on doit sélectionner un bâtiment
+        if (authProvider.user != null) {
+          final buildings = await authProvider.getUserBuildings();
+          
+          if (buildings.length > 1) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const BuildingSelectionScreen(),
+              ),
+            );
+            return;
+          }
+        }
+        
+        // Connexion normale
+        Navigator.of(context).pushReplacementNamed('/main');
+      } else {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => const BuildingSelectionScreen(),
