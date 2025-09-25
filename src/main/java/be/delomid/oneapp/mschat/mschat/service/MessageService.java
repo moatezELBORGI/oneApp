@@ -4,6 +4,7 @@ package be.delomid.oneapp.mschat.mschat.service;
 import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
 import be.delomid.oneapp.mschat.mschat.dto.SendMessageRequest;
 import be.delomid.oneapp.mschat.mschat.dto.FileAttachmentDto;
+import be.delomid.oneapp.mschat.mschat.interceptor.JwtWebSocketInterceptor;
 import be.delomid.oneapp.mschat.mschat.exception.ChannelNotFoundException;
 import be.delomid.oneapp.mschat.mschat.exception.UnauthorizedAccessException;
 import be.delomid.oneapp.mschat.mschat.model.*;
