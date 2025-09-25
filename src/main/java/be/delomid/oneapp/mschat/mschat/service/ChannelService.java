@@ -134,15 +134,26 @@ public class ChannelService {
     public Page<ChannelDto> getUserChannels(String userId, Pageable pageable) {
         log.debug("Getting channels for user: {}", userId);
 
-        // Récupérer l'utilisateur pour obtenir son bâtiment actuel
+        // Récupérer le bâtiment actuel depuis le JWT
+        String currentBuildingId = getCurrentBuildingFromContext();
+        
+        log.debug("Current building from JWT: {}", currentBuildingId);
+
+        if (currentBuildingId == null) {
+            // Fallback: récupérer depuis la base de données
+            Resident user = residentRepository.findByEmail(userId)
+                    .or(() -> residentRepository.findById(userId))
+                    .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+            currentBuildingId = getCurrentUserBuildingId(user);
+        }
+        
+        // Récupérer l'utilisateur pour obtenir son ID réel
         Resident user = residentRepository.findByEmail(userId)
                 .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
-
-        // Filtrer les canaux par bâtiment actuel de l'utilisateur
-        String currentBuildingId = getCurrentUserBuildingId(user);
         
-        Page<Channel> channels = channelRepository.findChannelsByUserIdAndBuilding(userId, currentBuildingId, pageable);
+        // Utiliser l'ID utilisateur réel pour la requête
+        Page<Channel> channels = channelRepository.findChannelsByUserIdAndBuilding(user.getIdUsers(), currentBuildingId, pageable);
         return channels.map(channel -> convertToDto(channel, userId));
     }
 
@@ -170,6 +181,19 @@ public class ChannelService {
         }
         
         return null; // Aucun bâtiment assigné
+    }
+    
+    private String getCurrentBuildingFromContext() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
+                JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
+                return principal.getBuildingId();
+            }
+        } catch (Exception e) {
+            log.debug("Could not extract building from JWT context: {}", e.getMessage());
+        }
+        return null;
     }
 
     @Transactional
@@ -247,23 +271,33 @@ public class ChannelService {
     }
 
     public List<ResidentDto> getBuildingResidents(String buildingId, String userId) {
-        // Récupérer l'utilisateur actuel
-        Resident currentUser = residentRepository.findByEmail(userId)
-                .or(() -> residentRepository.findById(userId))
-                .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+        log.debug("Getting building residents for buildingId: {} by user: {}", buildingId, userId);
         
-        // Utiliser le bâtiment actuel de l'utilisateur au lieu du paramètre
-        String currentBuildingId = getCurrentUserBuildingId(currentUser);
+        // Récupérer le bâtiment actuel depuis le JWT
+        String currentBuildingId = getCurrentBuildingFromContext();
+        
+        log.debug("Current building from JWT: {}", currentBuildingId);
+
+        if (currentBuildingId == null) {
+            // Fallback: récupérer depuis la base de données
+            Resident currentUser = residentRepository.findByEmail(userId)
+                    .or(() -> residentRepository.findById(userId))
+                    .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+            currentBuildingId = getCurrentUserBuildingId(currentUser);
+        }
+        
         if (currentBuildingId == null) {
             throw new UnauthorizedAccessException("User is not assigned to any building");
         }
-
-        // Récupérer les résidents du bâtiment actuel uniquement
+        
+        // Récupérer UNIQUEMENT les résidents du bâtiment actuel
         List<ResidentBuilding> residentBuildings = residentBuildingRepository.findActiveByBuildingId(currentBuildingId);
         List<Resident> residents = residentBuildings.stream()
                 .map(ResidentBuilding::getResident)
                 .distinct()
                 .collect(Collectors.toList());
+        
+        log.debug("Found {} residents in building {}", residents.size(), currentBuildingId);
         
         return residents.stream()
                 .map(this::convertResidentToDto)

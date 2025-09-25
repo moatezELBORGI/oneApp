@@ -1,6 +1,7 @@
 package be.delomid.oneapp.mschat.mschat.config;
 
 import be.delomid.oneapp.mschat.mschat.service.CustomUserDetailsService;
+import be.delomid.oneapp.mschat.mschat.interceptor.JwtWebSocketInterceptor;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,8 +48,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
                 
                 if (jwtConfig.validateToken(jwt, userDetails.getUsername())) {
+                    // Créer un principal personnalisé avec les informations du JWT
+                    String userId = jwtConfig.extractUserId(jwt);
+                    String buildingId = jwtConfig.extractBuildingId(jwt);
+                    
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
+                            new JwtWebSocketInterceptor.JwtPrincipal(userId != null ? userId : userEmail, userEmail, buildingId),
                             null,
                             userDetails.getAuthorities()
                     );

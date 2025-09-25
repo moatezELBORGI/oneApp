@@ -62,10 +62,16 @@ public class JwtWebSocketInterceptor implements ChannelInterceptor {
     public static class JwtPrincipal implements Principal {
         private final String name;
         private final String email;
+        private final String buildingId;
 
         public JwtPrincipal(String name, String email) {
+            this(name, email, null);
+        }
+        
+        public JwtPrincipal(String name, String email, String buildingId) {
             this.name = name;
             this.email = email;
+            this.buildingId = buildingId;
         }
 
         @Override
@@ -75,6 +81,10 @@ public class JwtWebSocketInterceptor implements ChannelInterceptor {
 
         public String getEmail() {
             return email;
+        }
+        
+        public String getBuildingId() {
+            return buildingId;
         }
     }
 }

@@ -142,13 +142,12 @@ public class ChannelController {
     }
 
     private String getUserId(Authentication authentication) {
-        // Récupérer l'ID utilisateur depuis le JWT
-        if (authentication.getPrincipal() instanceof UserDetails) {
+        if (authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
+            JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
+            return principal.getName();
+        } else if (authentication.getPrincipal() instanceof UserDetails) {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            // Chercher l'utilisateur par email pour récupérer son ID
-            return residentRepository.findByEmail(userDetails.getUsername())
-                    .map(Resident::getIdUsers)
-                    .orElse(userDetails.getUsername());
+            return userDetails.getUsername();
         }
         return authentication.getName();
     }
