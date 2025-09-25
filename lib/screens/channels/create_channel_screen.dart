@@ -41,8 +41,13 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
 
-    if (authProvider.user?.buildingId != null) {
-      channelProvider.loadBuildingResidents(authProvider.user!.buildingId!);
+    final currentBuildingId = authProvider.user?.buildingId;
+    print('DEBUG: Loading residents for channel creation in building: $currentBuildingId');
+    
+    if (currentBuildingId != null) {
+      // Vider d'abord les résidents actuels
+      channelProvider.clearBuildingResidents();
+      channelProvider.loadBuildingResidents(currentBuildingId);
     }
   }
 

@@ -168,6 +168,11 @@ class ChannelProvider with ChangeNotifier {
   }
 
   void _setLoading(bool loading) {
+  
+  void clearBuildingResidents() {
+    _buildingResidents.clear();
+    notifyListeners();
+  }
     _isLoading = loading;
     notifyListeners();
   }

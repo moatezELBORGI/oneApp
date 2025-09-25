@@ -6,12 +6,15 @@ import be.delomid.oneapp.mschat.mschat.dto.CreateChannelRequest;
 import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
 import be.delomid.oneapp.mschat.mschat.exception.ChannelNotFoundException;
 import be.delomid.oneapp.mschat.mschat.exception.UnauthorizedAccessException;
+import be.delomid.oneapp.mschat.mschat.interceptor.JwtWebSocketInterceptor;
 import be.delomid.oneapp.mschat.mschat.model.*;
 import be.delomid.oneapp.mschat.mschat.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

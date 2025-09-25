@@ -163,6 +163,19 @@ public class MessageService {
         
         return null;
     }
+    
+    private String getCurrentBuildingFromContext() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
+                JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
+                return principal.getBuildingId();
+            }
+        } catch (Exception e) {
+            log.debug("Could not extract building from JWT context: {}", e.getMessage());
+        }
+        return null;
+    }
 
     private void validateChannelAccess(Long channelId, String userId) {
         Optional<Resident> resident=residentRepository.findByEmail(userId);

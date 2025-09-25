@@ -55,17 +55,23 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
       return; // Déjà connecté à ce bâtiment
     }
 
+    print('DEBUG: Switching from building $_currentBuildingId to ${building.buildingId}');
+    
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     final success = await authProvider.selectBuilding(building.buildingId);
     
     if (success && mounted) {
-      // Nettoyer les données des autres providers
+      print('DEBUG: Building switch successful, clearing all data');
+      
+      // Nettoyer TOUTES les données des autres providers
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
       final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
       
       chatProvider.clearAllData();
       channelProvider.clearAllData();
+      
+      print('DEBUG: All data cleared, navigating to main screen');
       
       Navigator.of(context).pushNamedAndRemoveUntil('/main', (route) => false);
       ScaffoldMessenger.of(context).showSnackBar(

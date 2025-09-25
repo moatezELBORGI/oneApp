@@ -29,19 +29,23 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
 
-    print('DEBUG: Loading residents for building: ${authProvider.user?.buildingId}');
+    final currentBuildingId = authProvider.user?.buildingId;
+    print('DEBUG: Loading residents for current building: $currentBuildingId');
 
-    if (authProvider.user?.buildingId != null) {
-      await channelProvider.loadBuildingResidents(authProvider.user!.buildingId!);
-      print('DEBUG: Loaded ${channelProvider.buildingResidents.length} residents');
+    if (currentBuildingId != null) {
+      // Vider d'abord les résidents actuels
+      channelProvider.clearBuildingResidents();
+      
+      await channelProvider.loadBuildingResidents(currentBuildingId);
+      
       setState(() {
         _filteredResidents = channelProvider.buildingResidents
             .where((resident) => resident.id != authProvider.user?.id)
             .toList();
-        print('DEBUG: Filtered to ${_filteredResidents.length} residents (excluding current user)');
+        print('DEBUG: Filtered to ${_filteredResidents.length} residents for building $currentBuildingId (excluding current user)');
       });
     } else {
-      print('DEBUG: No building ID found for current user');
+      print('DEBUG: No current building ID found for user');
     }
   }
 

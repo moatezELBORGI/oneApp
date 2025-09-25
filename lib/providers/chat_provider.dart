@@ -226,6 +226,8 @@ class ChatProvider with ChangeNotifier {
     _channelMessages.clear();
     _isLoadingMessages.clear();
     _typingUsers.clear();
+    _isLoading = false;
+    _error = null;
     notifyListeners();
   }
 
