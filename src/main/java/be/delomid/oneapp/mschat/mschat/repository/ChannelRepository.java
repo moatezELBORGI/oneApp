@@ -22,6 +22,10 @@ public interface ChannelRepository extends JpaRepository<Channel, Long> {
            "AND (c.buildingId = :buildingId OR c.buildingId IS NULL)")
     Page<Channel> findChannelsByUserIdAndBuilding(@Param("userId") String userId, @Param("buildingId") String buildingId, Pageable pageable);
 
+    @Query("SELECT c FROM Channel c JOIN c.members m WHERE m.userId = :userId AND m.isActive = true AND c.isActive = true " +
+           "AND c.type = 'ONE_TO_ONE' AND (c.buildingId = :buildingId OR c.buildingId IS NULL)")
+    Page<Channel> findDirectChannelsByUserIdAndBuilding(@Param("userId") String userId, @Param("buildingId") String buildingId, Pageable pageable);
+
     @Query("SELECT c FROM Channel c WHERE c.type = :type AND c.buildingId = :buildingId AND c.isActive = true")
     List<Channel> findByTypeAndBuildingId(@Param("type") ChannelType type, @Param("buildingId") String buildingId);
 

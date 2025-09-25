@@ -172,10 +172,19 @@ public class ChannelService {
 
     private String getCurrentUserBuildingId(Resident user) {
         // Chercher dans les relations ResidentBuilding en priorité
-        List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
-        if (!userBuildings.isEmpty()) {
-            // Prendre le premier bâtiment actif
-            return userBuildings.get(0).getBuilding().getBuildingId();
+        try {
+            // Chercher dans les relations ResidentBuilding en priorité
+            List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
+            if (!userBuildings.isEmpty()) {
+                return userBuildings.get(0).getBuilding().getBuildingId();
+            }
+            
+            // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
+            if (user.getApartment() != null && user.getApartment().getBuilding() != null) {
+                return user.getApartment().getBuilding().getBuildingId();
+            }
+        } catch (Exception e) {
+            log.warn("Error getting user building ID for user {}: {}", user.getIdUsers(), e.getMessage());
         }
         
         // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
@@ -191,11 +200,6 @@ public class ChannelService {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
                 JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
-                return principal.getBuildingId();
-            }
-        } catch (Exception e) {
-            log.debug("Could not extract building from JWT context: {}", e.getMessage());
-        }
         return null;
     }
 
@@ -240,24 +244,31 @@ public class ChannelService {
     }
 
     public Optional<ChannelDto> getOrCreateOneToOneChannel(String userId1, String userId2) {
-        Optional<Channel> existingChannel = channelRepository.findOneToOneChannel(userId1, userId2);
+        // Récupérer les utilisateurs
+        Resident user1 = residentRepository.findByEmail(userId1)
+                .or(() -> residentRepository.findById(userId1))
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId1));
+        Resident user2 = residentRepository.findByEmail(userId2)
+                .or(() -> residentRepository.findById(userId2))
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId2));
+
+        // Utiliser les IDs réels pour la recherche
+        String realUserId1 = user1.getIdUsers();
+        String realUserId2 = user2.getIdUsers();
+        
+        Optional<Channel> existingChannel = channelRepository.findOneToOneChannel(realUserId1, realUserId2);
 
         if (existingChannel.isPresent()) {
             return Optional.of(convertToDto(existingChannel.get(), userId1));
         }
 
-        // Récupérer les informations des deux utilisateurs pour créer le nom
-        Resident user1 = residentRepository.findById(userId1)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId1));
-        Resident user2 = residentRepository.findById(userId2)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId2));
 
         // Créer un nouveau canal one-to-one avec le nom de l'autre utilisateur
         CreateChannelRequest request = new CreateChannelRequest();
         request.setName(user2.getFname() + " " + user2.getLname());
         request.setType(ChannelType.ONE_TO_ONE);
         request.setIsPrivate(true);
-        request.setMemberIds(List.of(userId2));
+        request.setMemberIds(List.of(realUserId2));
 
         ChannelDto channel = createChannel(request, userId1);
         return Optional.of(channel);
@@ -487,14 +498,22 @@ public class ChannelService {
     }
 
     private void addChannelMember(Channel channel, String userId, MemberRole role) {
+        // Résoudre l'ID utilisateur si c'est un email
+        String realUserId = userId;
+        if (userId.contains("@")) {
+            Resident user = residentRepository.findByEmail(userId)
+                    .orElseThrow(() -> new UnauthorizedAccessException("User not found: " + userId));
+            realUserId = user.getIdUsers();
+        }
+        
         ChannelMember member = ChannelMember.builder()
                 .channel(channel)
-                .userId(userId)
+                .userId(realUserId)
                 .role(role)
                 .build();
 
         channelMemberRepository.save(member);
-        log.debug("Added user {} as {} to channel {}", userId, role, channel.getId());
+        log.debug("Added user {} as {} to channel {}", realUserId, role, channel.getId());
     }
 
     private ChannelDto convertToDto(Channel channel) {

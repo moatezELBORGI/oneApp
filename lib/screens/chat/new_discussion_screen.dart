@@ -33,9 +33,9 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
     print('DEBUG: Loading residents for current building: $currentBuildingId');
 
     if (currentBuildingId != null) {
-      // Vider d'abord les résidents actuels
-      channelProvider.clearBuildingResidents();
-      
+      // Nettoyer complètement les données précédentes
+      channelProvider.clearAllData();
+
       await channelProvider.loadBuildingResidents(currentBuildingId);
       
       setState(() {
@@ -43,6 +43,9 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
             .where((resident) => resident.id != authProvider.user?.id)
             .toList();
         print('DEBUG: Filtered to ${_filteredResidents.length} residents for building $currentBuildingId (excluding current user)');
+        for (var resident in _filteredResidents) {
+          print('DEBUG: Resident: ${resident.fullName} (ID: ${resident.id}, Building: ${resident.buildingId})');
+        }
       });
     } else {
       print('DEBUG: No current building ID found for user');

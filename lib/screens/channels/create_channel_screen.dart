@@ -45,8 +45,8 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
     print('DEBUG: Loading residents for channel creation in building: $currentBuildingId');
     
     if (currentBuildingId != null) {
-      // Vider d'abord les résidents actuels
-      channelProvider.clearBuildingResidents();
+      // Nettoyer complètement les données précédentes
+      channelProvider.clearAllData();
       channelProvider.loadBuildingResidents(currentBuildingId);
     }
   }

@@ -64,12 +64,8 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
     if (success && mounted) {
       print('DEBUG: Building switch successful, clearing all data');
       
-      // Nettoyer TOUTES les données des autres providers
-      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-      final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-      
-      chatProvider.clearAllData();
-      channelProvider.clearAllData();
+      // Nettoyer TOUTES les données des providers
+      _clearAllProviderData();
       
       print('DEBUG: All data cleared, navigating to main screen');
       
@@ -80,6 +76,22 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
           backgroundColor: AppTheme.successColor,
         ),
       );
+    }
+  }
+
+  void _clearAllProviderData() {
+    try {
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+      final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+      
+      chatProvider.clearAllData();
+      channelProvider.clearAllData();
+      notificationProvider.clearAllNotifications();
+      
+      print('DEBUG: All provider data cleared for building switch');
+    } catch (e) {
+      print('DEBUG: Error clearing provider data: $e');
     }
   }
 

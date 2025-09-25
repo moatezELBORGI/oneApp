@@ -131,6 +131,14 @@ public class ChannelController {
         return ResponseEntity.ok(residents);
     }
 
+    @GetMapping("/current-building/residents")
+    public ResponseEntity<List<ResidentDto>> getCurrentBuildingResidents(Authentication authentication) {
+        String userId = getUserId(authentication);
+        // Utiliser un buildingId factice car la méthode utilise le bâtiment actuel du JWT
+        List<ResidentDto> residents = channelService.getBuildingResidents("current", userId);
+        return ResponseEntity.ok(residents);
+    }
+
     @PostMapping("/building/{buildingId}/create")
     public ResponseEntity<ChannelDto> createBuildingChannel(
             @PathVariable String buildingId,

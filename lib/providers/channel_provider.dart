@@ -87,12 +87,12 @@ class ChannelProvider with ChangeNotifier {
   }
 
   Future<void> loadBuildingResidents(String buildingId) async {
-    print('DEBUG: API call to load residents for building: $buildingId');
+    print('DEBUG: Loading residents for current building context');
     _setLoading(true);
     _clearError();
 
     try {
-      final response = await _apiService.getBuildingResidents(buildingId);
+      final response = await _apiService.getBuildingResidents("current");
       print('DEBUG: API response: $response');
 
       // Forcer à extraire la liste même si ApiService renvoie Map
@@ -102,7 +102,10 @@ class ChannelProvider with ChangeNotifier {
           .map((json) => User.fromJson(json))
           .toList();
 
-      print('DEBUG: Parsed ${_buildingResidents.length} residents');
+      print('DEBUG: Parsed ${_buildingResidents.length} residents for current building');
+      for (var resident in _buildingResidents) {
+        print('DEBUG: Resident: ${resident.fullName} (Building: ${resident.buildingId})');
+      }
     } catch (e) {
       print('DEBUG: Error loading residents: $e');
       _setError(e.toString());
@@ -164,6 +167,8 @@ class ChannelProvider with ChangeNotifier {
   void clearAllData() {
     _channels.clear();
     _buildingResidents.clear();
+    _isLoading = false;
+    _error = null;
     notifyListeners();
   }
 
