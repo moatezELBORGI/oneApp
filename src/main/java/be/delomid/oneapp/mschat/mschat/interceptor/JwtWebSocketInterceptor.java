@@ -37,10 +37,11 @@ public class JwtWebSocketInterceptor implements ChannelInterceptor {
                 try {
                     String email = jwtConfig.extractUsername(token);
                     String userId = jwtConfig.extractUserId(token);
+                    String buildingId = jwtConfig.extractBuildingId(token);
                     
                     if (jwtConfig.validateToken(token, email)) {
-                        accessor.setUser(new JwtPrincipal(userId, email));
-                        log.debug("WebSocket connection authenticated for user: {}", userId);
+                        accessor.setUser(new JwtPrincipal(userId != null ? userId : email, email, buildingId));
+                        log.debug("WebSocket connection authenticated for user: {} in building: {}", userId, buildingId);
                     } else {
                         log.error("Invalid JWT token for WebSocket connection");
                         return null;
@@ -63,14 +64,14 @@ public class JwtWebSocketInterceptor implements ChannelInterceptor {
         private final String name;
         private final String email;
         private final String buildingId;
-        private final String buildingId;
 
         public JwtPrincipal(String name, String email) {
             this(name, email, null);
         }
         
         public JwtPrincipal(String name, String email, String buildingId) {
-            this(name, email, null);
+            this.name = name;
+            this.email = email;
             this.buildingId = buildingId;
         }
 
@@ -82,17 +83,7 @@ public class JwtWebSocketInterceptor implements ChannelInterceptor {
         public String getEmail() {
             return email;
         }
-        
-        public JwtPrincipal(String name, String email, String buildingId) {
-            this.name = name;
-            this.email = email;
-            this.buildingId = buildingId;
-        }
 
-        public String getBuildingId() {
-            return buildingId;
-        }
-        
         public String getBuildingId() {
             return buildingId;
         }
