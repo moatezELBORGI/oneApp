@@ -1,6 +1,5 @@
 package be.delomid.oneapp.mschat.mschat.service;
 
-
 import be.delomid.oneapp.mschat.mschat.dto.ChannelDto;
 import be.delomid.oneapp.mschat.mschat.dto.CreateChannelRequest;
 import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
@@ -21,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,7 +46,6 @@ public class ChannelService {
             // Seuls les admins peuvent créer ces types de canaux
             validateAdminAccess(createdBy);
         }
-        // Les canaux ONE_TO_ONE peuvent être créés par tous les résidents
 
         // Vérifications spécifiques selon le type de canal
         validateChannelCreation(request, createdBy);
@@ -155,7 +152,7 @@ public class ChannelService {
                 .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
         
-        // Utiliser l'ID utilisateur réel pour la requête
+        // Utiliser l'ID utilisateur réel pour la requête avec filtrage par bâtiment
         Page<Channel> channels = channelRepository.findChannelsByUserIdAndBuilding(user.getIdUsers(), currentBuildingId, pageable);
         return channels.map(channel -> convertToDto(channel, userId));
     }
@@ -168,39 +165,6 @@ public class ChannelService {
         validateChannelAccess(channel, userId);
 
         return convertToDto(channel, userId);
-    }
-
-    private String getCurrentUserBuildingId(Resident user) {
-        // Chercher dans les relations ResidentBuilding en priorité
-        try {
-            // Chercher dans les relations ResidentBuilding en priorité
-            List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
-            if (!userBuildings.isEmpty()) {
-                return userBuildings.get(0).getBuilding().getBuildingId();
-            }
-            
-            // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
-            if (user.getApartment() != null && user.getApartment().getBuilding() != null) {
-                return user.getApartment().getBuilding().getBuildingId();
-            }
-        } catch (Exception e) {
-            log.warn("Error getting user building ID for user {}: {}", user.getIdUsers(), e.getMessage());
-        }
-        
-        // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
-        if (user.getApartment() != null) {
-            return user.getApartment().getBuilding().getBuildingId();
-        }
-        
-        return null; // Aucun bâtiment assigné
-    }
-    
-    private String getCurrentBuildingFromContext() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
-                JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
-        return null;
     }
 
     @Transactional
@@ -230,7 +194,7 @@ public class ChannelService {
 
     @Transactional
     public void leaveChannel(Long channelId, String userId) {
-        Optional<Resident> resident=residentRepository.findByEmail(userId);
+        Optional<Resident> resident = residentRepository.findByEmail(userId);
 
         ChannelMember member = channelMemberRepository
                 .findByChannelIdAndUserId(channelId, resident.get().getIdUsers())
@@ -252,6 +216,9 @@ public class ChannelService {
                 .or(() -> residentRepository.findById(userId2))
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId2));
 
+        // Vérifier que les deux utilisateurs sont dans le même bâtiment ACTUEL
+        validateSameBuildingAccess(userId1, userId2);
+
         // Utiliser les IDs réels pour la recherche
         String realUserId1 = user1.getIdUsers();
         String realUserId2 = user2.getIdUsers();
@@ -261,7 +228,6 @@ public class ChannelService {
         if (existingChannel.isPresent()) {
             return Optional.of(convertToDto(existingChannel.get(), userId1));
         }
-
 
         // Créer un nouveau canal one-to-one avec le nom de l'autre utilisateur
         CreateChannelRequest request = new CreateChannelRequest();
@@ -324,8 +290,8 @@ public class ChannelService {
         validateUserBuildingAccess(createdBy, buildingId);
 
         // Vérifier qu'il n'existe pas déjà un canal pour ce bâtiment
-        List<Channel> existingChannel = channelRepository.findByTypeAndBuildingId(ChannelType.BUILDING, buildingId);
-        if (!existingChannel.isEmpty() && existingChannel.get(0).getIsActive() == true) {
+        List<Channel> existingChannels = channelRepository.findByTypeAndBuildingId(ChannelType.BUILDING, buildingId);
+        if (!existingChannels.isEmpty() && existingChannels.get(0).getIsActive()) {
             throw new IllegalArgumentException("A channel for this building already exists");
         }
 
@@ -344,19 +310,52 @@ public class ChannelService {
 
         for (Resident resident : residents) {
             if (!resident.getIdUsers().equals(createdBy)) {
-                addChannelMember(channelEntity, String.valueOf(resident.getIdUsers()), MemberRole.MEMBER);
+                addChannelMember(channelEntity, resident.getIdUsers(), MemberRole.MEMBER);
             }
         }
 
         return channel;
     }
 
+    private String getCurrentBuildingFromContext() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
+                JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
+                return principal.getBuildingId();
+            }
+        } catch (Exception e) {
+            log.debug("Could not extract building from JWT context: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private String getCurrentUserBuildingId(Resident user) {
+        try {
+            // Chercher dans les relations ResidentBuilding en priorité
+            List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
+            if (!userBuildings.isEmpty()) {
+                return userBuildings.get(0).getBuilding().getBuildingId();
+            }
+            
+            // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
+            if (user.getApartment() != null && user.getApartment().getBuilding() != null) {
+                return user.getApartment().getBuilding().getBuildingId();
+            }
+        } catch (Exception e) {
+            log.warn("Error getting user building ID for user {}: {}", user.getIdUsers(), e.getMessage());
+        }
+        
+        return null;
+    }
+
     private void validateUserBuildingAccess(String userId, String buildingId) {
-        Resident user = residentRepository.findById(userId)
+        Resident user = residentRepository.findByEmail(userId)
+                .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
 
         // Vérifier via ResidentBuilding en priorité
-        List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(userId);
+        List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
         boolean hasAccessViaResidentBuilding = userBuildings.stream()
                 .anyMatch(rb -> rb.getBuilding().getBuildingId().equals(buildingId));
         
@@ -365,15 +364,13 @@ public class ChannelService {
         }
 
         // Fallback: Vérifier par l'appartement
-        Optional<Apartment> userApartment = apartmentRepository.findByResidentIdUsers(userId);
-        if (userApartment.isPresent() && userApartment.get().getBuilding().getBuildingId().equals(buildingId)) {
-            return;
-        }
-        
-        // Vérifier par email
-        Optional<Apartment> apartmentByEmail = apartmentRepository.findByResidentEmail(user.getEmail());
-        if (apartmentByEmail.isPresent() && apartmentByEmail.get().getBuilding().getBuildingId().equals(buildingId)) {
-            return;
+        try {
+            Optional<Apartment> userApartment = apartmentRepository.findByResidentIdUsers(user.getIdUsers());
+            if (userApartment.isPresent() && userApartment.get().getBuilding().getBuildingId().equals(buildingId)) {
+                return;
+            }
+        } catch (Exception e) {
+            log.warn("Error checking apartment access: {}", e.getMessage());
         }
 
         // Si admin du bâtiment, autoriser l'accès
@@ -405,8 +402,7 @@ public class ChannelService {
                     validateSameBuildingAccess(createdBy, memberId);
                 }
             }
-        }
-        else if (request.getType() == ChannelType.BUILDING) {
+        } else if (request.getType() == ChannelType.BUILDING) {
             if (request.getBuildingId() == null) {
                 throw new IllegalArgumentException("Building ID is required for BUILDING channels");
             }
@@ -415,11 +411,10 @@ public class ChannelService {
                     .findByTypeAndBuildingId(ChannelType.BUILDING, request.getBuildingId());
             // Vérifier que l'utilisateur habite dans ce bâtiment
             validateUserBuildingAccess(createdBy, request.getBuildingId());
-            if (!existing.isEmpty() && existing.get(0).getIsActive() == true) {
+            if (!existing.isEmpty() && existing.get(0).getIsActive()) {
                 throw new IllegalArgumentException("A channel for this building already exists");
             }
-        }
-        else if (request.getType() == ChannelType.BUILDING_GROUP) {
+        } else if (request.getType() == ChannelType.BUILDING_GROUP) {
             if (request.getBuildingGroupId() == null) {
                 throw new IllegalArgumentException("Building Group ID is required for BUILDING_GROUP channels");
             }
@@ -433,6 +428,7 @@ public class ChannelService {
 
     private void validateAdminAccess(String userId) {
         Resident user = residentRepository.findByEmail(userId)
+                .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
 
         if (user.getRole() != UserRole.BUILDING_ADMIN &&
@@ -444,6 +440,7 @@ public class ChannelService {
 
     private void validateChannelAdminAccess(Long channelId, String userId) {
         Resident user = residentRepository.findByEmail(userId)
+                .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
 
         // Super admin a accès à tout
@@ -476,8 +473,13 @@ public class ChannelService {
             return;
         }
 
-        // Utiliser la méthode sécurisée pour obtenir les bâtiments
-        String user1BuildingId = getCurrentUserBuildingId(user1);
+        // Utiliser le bâtiment actuel depuis le JWT pour user1
+        String user1BuildingId = getCurrentBuildingFromContext();
+        if (user1BuildingId == null) {
+            user1BuildingId = getCurrentUserBuildingId(user1);
+        }
+
+        // Pour user2, utiliser la méthode sécurisée
         String user2BuildingId = getCurrentUserBuildingId(user2);
 
         if (user1BuildingId == null || user2BuildingId == null ||
@@ -487,7 +489,7 @@ public class ChannelService {
     }
 
     private void validateChannelAccess(Channel channel, String userId) {
-        Optional<Resident> user=residentRepository.findByEmail(userId);
+        Optional<Resident> user = residentRepository.findByEmail(userId);
 
         Optional<ChannelMember> member = channelMemberRepository
                 .findByChannelIdAndUserId(channel.getId(), user.get().getIdUsers());
@@ -559,13 +561,19 @@ public class ChannelService {
         String apartmentId = null;
         String buildingId = null;
 
-        if (resident.getApartment() != null) {
-            apartmentId = resident.getApartment().getIdApartment();
-            buildingId = resident.getApartment().getBuilding().getBuildingId();
+        try {
+            if (resident.getApartment() != null) {
+                apartmentId = resident.getApartment().getIdApartment();
+                if (resident.getApartment().getBuilding() != null) {
+                    buildingId = resident.getApartment().getBuilding().getBuildingId();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error accessing apartment/building for resident {}: {}", resident.getIdUsers(), e.getMessage());
         }
 
         return ResidentDto.builder()
-                .idUsers(String.valueOf(resident.getIdUsers()))
+                .idUsers(resident.getIdUsers())
                 .fname(resident.getFname())
                 .lname(resident.getLname())
                 .email(resident.getEmail())
