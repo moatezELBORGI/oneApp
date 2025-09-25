@@ -27,6 +27,7 @@ public class MessageService {
     private final ChannelMemberRepository channelMemberRepository;
     private final ResidentRepository residentRepository;
     private final FileAttachmentRepository fileAttachmentRepository;
+    private final ResidentBuildingRepository residentBuildingRepository;
 
     @Transactional
     public MessageDto sendMessage(SendMessageRequest request, String senderId) {
@@ -84,8 +85,9 @@ public class MessageService {
     public Page<MessageDto> getChannelMessages(Long channelId, String userId, Pageable pageable) {
         log.debug("Getting messages for channel {} for user {}", channelId, userId);
 
-        // Vérifier l'accès au canal
+        // Vérifier l'accès au canal et que le canal appartient au bâtiment actuel
         validateChannelAccess(channelId, userId);
+        validateChannelBuildingAccess(channelId, userId);
 
         Page<Message> messages = messageRepository.findByChannelIdOrderByCreatedAtDesc(channelId, pageable);
         return messages.map(this::convertToDto);
@@ -123,6 +125,43 @@ public class MessageService {
         messageRepository.save(message);
 
         log.debug("Message {} deleted by user {}", messageId, userId);
+    }
+
+    private void validateChannelBuildingAccess(Long channelId, String userId) {
+        Channel channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new ChannelNotFoundException("Channel not found: " + channelId));
+        
+        // Si le canal n'a pas de bâtiment spécifique (PUBLIC), autoriser l'accès
+        if (channel.getBuildingId() == null || channel.getType() == ChannelType.PUBLIC) {
+            return;
+        }
+        
+        // Récupérer l'utilisateur et son bâtiment actuel
+        Resident user = residentRepository.findByEmail(userId)
+                .or(() -> residentRepository.findById(userId))
+                .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+        
+        String currentBuildingId = getCurrentUserBuildingId(user);
+        
+        // Vérifier que le canal appartient au bâtiment actuel de l'utilisateur
+        if (currentBuildingId == null || !currentBuildingId.equals(channel.getBuildingId())) {
+            throw new UnauthorizedAccessException("Channel does not belong to user's current building");
+        }
+    }
+    
+    private String getCurrentUserBuildingId(Resident user) {
+        // Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
+        if (user.getApartment() != null) {
+            return user.getApartment().getBuilding().getBuildingId();
+        }
+        
+        // Sinon, chercher dans les relations ResidentBuilding
+        List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
+        if (!userBuildings.isEmpty()) {
+            return userBuildings.get(0).getBuilding().getBuildingId();
+        }
+        
+        return null;
     }
 
     private void validateChannelAccess(Long channelId, String userId) {

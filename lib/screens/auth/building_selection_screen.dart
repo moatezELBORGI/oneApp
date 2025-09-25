@@ -54,6 +54,13 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
     final success = await authProvider.selectBuilding(building.buildingId);
     
     if (success && mounted) {
+      // Nettoyer les données des autres providers avant de naviguer
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+      
+      chatProvider.clearAllData();
+      channelProvider.clearAllData();
+      
       Navigator.of(context).pushReplacementNamed('/main');
     }
   }

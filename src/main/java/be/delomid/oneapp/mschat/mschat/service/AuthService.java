@@ -138,6 +138,8 @@ public class AuthService {
         // Vérifier si l'utilisateur a plusieurs bâtiments
         List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(resident.getIdUsers());
         
+        log.debug("User {} has {} buildings", resident.getEmail(), userBuildings.size());
+        
         // Générer un token temporaire pour permettre l'accès aux endpoints de sélection de bâtiment
         String tempToken = jwtConfig.generateToken(
                 resident.getEmail(),
@@ -147,6 +149,7 @@ public class AuthService {
         
         if (userBuildings.size() > 1) {
             // L'utilisateur a plusieurs bâtiments, il doit choisir
+            log.debug("User has multiple buildings, redirecting to building selection");
             return AuthResponse.builder()
                     .token(tempToken) // Token temporaire pour accéder aux endpoints de sélection
                     .userId(resident.getIdUsers())
@@ -156,7 +159,7 @@ public class AuthService {
                     .role(resident.getRole())
                     .accountStatus(resident.getAccountStatus())
                     .otpRequired(false)
-                    .message("Veuillez sélectionner un bâtiment")
+                    .message("BUILDING_SELECTION_REQUIRED")
                     .build();
         } else if (userBuildings.size() == 1) {
             // Un seul bâtiment, connexion directe
@@ -169,10 +172,11 @@ public class AuthService {
     }
     
     private AuthResponse generateTokenForBuilding(Resident resident, ResidentBuilding residentBuilding) {
-        String token = jwtConfig.generateToken(
+        String token = jwtConfig.generateTokenWithBuilding(
                 resident.getEmail(),
                 resident.getIdUsers(),
-                residentBuilding.getRoleInBuilding().name()
+                residentBuilding.getRoleInBuilding().name(),
+                residentBuilding.getBuilding().getBuildingId()
         );
         String refreshToken = jwtConfig.generateRefreshToken(
                 resident.getEmail(),

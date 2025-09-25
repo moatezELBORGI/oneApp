@@ -60,6 +60,13 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
     final success = await authProvider.selectBuilding(building.buildingId);
     
     if (success && mounted) {
+      // Nettoyer les données des autres providers
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+      
+      chatProvider.clearAllData();
+      channelProvider.clearAllData();
+      
       Navigator.of(context).pushNamedAndRemoveUntil('/main', (route) => false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

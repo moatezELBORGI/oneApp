@@ -60,6 +60,14 @@ public class JwtConfig {
         return createToken(claims, username, expiration);
     }
     
+    public String generateTokenWithBuilding(String username, String userId, String role, String buildingId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("role", role);
+        claims.put("buildingId", buildingId);
+        return createToken(claims, username, expiration);
+    }
+
     public String generateRefreshToken(String username, String userId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
@@ -88,5 +96,9 @@ public class JwtConfig {
     
     public String extractRole(String token) {
         return extractClaim(token, claims -> claims.get("role", String.class));
+    }
+    
+    public String extractBuildingId(String token) {
+        return extractClaim(token, claims -> claims.get("buildingId", String.class));
     }
 }

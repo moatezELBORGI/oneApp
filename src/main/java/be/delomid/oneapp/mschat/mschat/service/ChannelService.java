@@ -31,6 +31,7 @@ public class ChannelService {
     private final MessageRepository messageRepository;
     private final ResidentRepository residentRepository;
     private final ApartmentRepository apartmentRepository;
+    private final ResidentBuildingRepository residentBuildingRepository;
 
     @Transactional
     public ChannelDto createChannel(CreateChannelRequest request, String createdBy) {
@@ -133,7 +134,15 @@ public class ChannelService {
     public Page<ChannelDto> getUserChannels(String userId, Pageable pageable) {
         log.debug("Getting channels for user: {}", userId);
 
-        Page<Channel> channels = channelRepository.findChannelsByUserId(userId, pageable);
+        // Récupérer l'utilisateur pour obtenir son bâtiment actuel
+        Resident user = residentRepository.findByEmail(userId)
+                .or(() -> residentRepository.findById(userId))
+                .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+
+        // Filtrer les canaux par bâtiment actuel de l'utilisateur
+        String currentBuildingId = getCurrentUserBuildingId(user);
+        
+        Page<Channel> channels = channelRepository.findChannelsByUserIdAndBuilding(userId, currentBuildingId, pageable);
         return channels.map(channel -> convertToDto(channel, userId));
     }
 
@@ -145,6 +154,22 @@ public class ChannelService {
         validateChannelAccess(channel, userId);
 
         return convertToDto(channel, userId);
+    }
+
+    private String getCurrentUserBuildingId(Resident user) {
+        // Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
+        if (user.getApartment() != null) {
+            return user.getApartment().getBuilding().getBuildingId();
+        }
+        
+        // Sinon, chercher dans les relations ResidentBuilding (pour les admins sans appartement)
+        List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
+        if (!userBuildings.isEmpty()) {
+            // Prendre le premier bâtiment actif (ou implémenter une logique de sélection)
+            return userBuildings.get(0).getBuilding().getBuildingId();
+        }
+        
+        return null; // Aucun bâtiment assigné
     }
 
     @Transactional
@@ -222,10 +247,24 @@ public class ChannelService {
     }
 
     public List<ResidentDto> getBuildingResidents(String buildingId, String userId) {
-        // Vérifier que l'utilisateur habite dans ce bâtiment
-        validateUserBuildingAccess(userId, buildingId);
+        // Récupérer l'utilisateur actuel
+        Resident currentUser = residentRepository.findByEmail(userId)
+                .or(() -> residentRepository.findById(userId))
+                .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+        
+        // Utiliser le bâtiment actuel de l'utilisateur au lieu du paramètre
+        String currentBuildingId = getCurrentUserBuildingId(currentUser);
+        if (currentBuildingId == null) {
+            throw new UnauthorizedAccessException("User is not assigned to any building");
+        }
 
-        List<Resident> residents = residentRepository.findByBuildingId(buildingId);
+        // Récupérer les résidents du bâtiment actuel uniquement
+        List<ResidentBuilding> residentBuildings = residentBuildingRepository.findActiveByBuildingId(currentBuildingId);
+        List<Resident> residents = residentBuildings.stream()
+                .map(ResidentBuilding::getResident)
+                .distinct()
+                .collect(Collectors.toList());
+        
         return residents.stream()
                 .map(this::convertResidentToDto)
                 .collect(Collectors.toList());

@@ -222,6 +222,13 @@ class ChatProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void clearAllData() {
+    _channelMessages.clear();
+    _isLoadingMessages.clear();
+    _typingUsers.clear();
+    notifyListeners();
+  }
+
   void _setError(String error) {
     _error = error;
     notifyListeners();

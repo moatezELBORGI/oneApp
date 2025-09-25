@@ -50,13 +50,15 @@ public class BuildingSelectionService {
         // Vérifier que l'utilisateur a accès à ce bâtiment
         ResidentBuilding residentBuilding = residentBuildingRepository
                 .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
+                .or(() -> residentBuildingRepository.findByResidentEmailAndBuildingId(resident.getEmail(), buildingId))
                 .orElseThrow(() -> new IllegalArgumentException("User does not have access to this building"));
 
         // Générer un nouveau token avec les informations du bâtiment sélectionné
-        String token = jwtConfig.generateToken(
+        String token = jwtConfig.generateTokenWithBuilding(
                 resident.getEmail(),
                 resident.getIdUsers(),
-                residentBuilding.getRoleInBuilding().name()
+                residentBuilding.getRoleInBuilding().name(),
+                buildingId
         );
 
         String refreshToken = jwtConfig.generateRefreshToken(
@@ -69,6 +71,8 @@ public class BuildingSelectionService {
             apartmentId = residentBuilding.getApartment().getIdApartment();
         }
 
+        log.debug("Building selected successfully: {} for user: {}", buildingId, userId);
+        
         return AuthResponse.builder()
                 .token(token)
                 .refreshToken(refreshToken)

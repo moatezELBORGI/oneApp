@@ -105,7 +105,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> _handleLoginSuccess(Map<String, dynamic> response) async {
     // Vérifier si l'utilisateur doit sélectionner un bâtiment
-    if (response['message'] == 'Veuillez sélectionner un bâtiment') {
+    if (response['message'] == 'BUILDING_SELECTION_REQUIRED') {
       // Sauvegarder le token temporaire pour permettre l'accès aux endpoints de sélection
       final token = response['token'];
       if (token != null) {
@@ -178,6 +178,11 @@ class AuthProvider with ChangeNotifier {
     _user = null;
     _clearError();
     notifyListeners();
+  }
+
+  Future<void> _clearOtherProvidersData() async {
+    // Cette méthode sera appelée depuis le contexte approprié
+    // pour nettoyer les données des autres providers
   }
 
   void _setLoading(bool loading) {
