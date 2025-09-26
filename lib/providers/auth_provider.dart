@@ -111,7 +111,7 @@ class AuthProvider with ChangeNotifier {
       if (token != null) {
         await StorageService.saveToken(token);
       }
-      
+
       // Créer un utilisateur temporaire pour la navigation
       _user = User.fromJson(response);
       _currentUserId = _user!.id;
@@ -119,7 +119,7 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
       return;
     }
-    
+
     final token = response['token'];
     final refreshToken = response['refreshToken'];
 

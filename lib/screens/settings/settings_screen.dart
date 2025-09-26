@@ -21,9 +21,9 @@ class SettingsScreen extends StatelessWidget {
           children: [
             // Profile Section
             _buildProfileSection(context),
-            
+
             const SizedBox(height: 20),
-            
+
             // Settings Sections
             _buildSettingsSection(
               title: 'Compte',
@@ -58,7 +58,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             _buildSettingsSection(
               title: 'Notifications',
               items: [
@@ -88,7 +88,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             _buildSettingsSection(
               title: 'Confidentialité',
               items: [
@@ -114,7 +114,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             _buildSettingsSection(
               title: 'Support',
               items: [
@@ -144,9 +144,9 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Logout Button
             Padding(
               padding: const EdgeInsets.all(16),
@@ -172,7 +172,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 20),
           ],
         ),
@@ -200,32 +200,32 @@ class SettingsScreen extends StatelessWidget {
                 backgroundColor: AppTheme.primaryColor,
                 child: user?.picture != null
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(40),
-                        child: Image.network(
-                          user!.picture!,
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Text(
-                              user.initials,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Text(
-                        user?.initials ?? 'U',
+                  borderRadius: BorderRadius.circular(40),
+                  child: Image.network(
+                    user!.picture!,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Text(
+                        user.initials,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
-                      ),
+                      );
+                    },
+                  ),
+                )
+                    : Text(
+                  user?.initials ?? 'U',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               Text(

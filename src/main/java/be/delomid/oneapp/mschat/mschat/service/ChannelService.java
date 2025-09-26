@@ -137,7 +137,7 @@ public class ChannelService {
 
         // Récupérer le bâtiment actuel depuis le JWT
         String currentBuildingId = getCurrentBuildingFromContext();
-        
+
         log.debug("Current building from JWT: {}", currentBuildingId);
 
         if (currentBuildingId == null) {
@@ -147,12 +147,12 @@ public class ChannelService {
                     .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
             currentBuildingId = getCurrentUserBuildingId(user);
         }
-        
+
         // Récupérer l'utilisateur pour obtenir son ID réel
         Resident user = residentRepository.findByEmail(userId)
                 .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
-        
+
         // Utiliser l'ID utilisateur réel pour la requête avec filtrage par bâtiment
         Page<Channel> channels = channelRepository.findChannelsByUserIdAndBuilding(user.getIdUsers(), currentBuildingId, pageable);
         return channels.map(channel -> convertToDto(channel, userId));
@@ -223,7 +223,7 @@ public class ChannelService {
         // Utiliser les IDs réels pour la recherche
         String realUserId1 = user1.getIdUsers();
         String realUserId2 = user2.getIdUsers();
-        
+
         Optional<Channel> existingChannel = channelRepository.findOneToOneChannel(realUserId1, realUserId2);
 
         if (existingChannel.isPresent()) {
@@ -253,10 +253,10 @@ public class ChannelService {
 
     public List<ResidentDto> getBuildingResidents(String buildingId, String userId) {
         log.debug("Getting building residents for buildingId: {} by user: {}", buildingId, userId);
-        
+
         // Récupérer le bâtiment actuel depuis le JWT
         String currentBuildingId = getCurrentBuildingFromContext();
-        
+
         log.debug("Current building from JWT: {}", currentBuildingId);
 
         if (currentBuildingId == null) {
@@ -266,20 +266,20 @@ public class ChannelService {
                     .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
             currentBuildingId = getCurrentUserBuildingId(currentUser);
         }
-        
+
         if (currentBuildingId == null) {
             throw new UnauthorizedAccessException("User is not assigned to any building");
         }
-        
+
         // Récupérer UNIQUEMENT les résidents du bâtiment actuel
         List<ResidentBuilding> residentBuildings = residentBuildingRepository.findActiveByBuildingId(currentBuildingId);
         List<Resident> residents = residentBuildings.stream()
                 .map(ResidentBuilding::getResident)
                 .distinct()
                 .collect(Collectors.toList());
-        
+
         log.debug("Found {} residents in building {}", residents.size(), currentBuildingId);
-        
+
         return residents.stream()
                 .map(this::convertResidentToDto)
                 .collect(Collectors.toList());
@@ -338,7 +338,7 @@ public class ChannelService {
             if (!userBuildings.isEmpty()) {
                 return userBuildings.get(0).getBuilding().getBuildingId();
             }
-            
+
             // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
             if (user.getApartment() != null && user.getApartment().getBuilding() != null) {
                 return user.getApartment().getBuilding().getBuildingId();
@@ -346,7 +346,7 @@ public class ChannelService {
         } catch (Exception e) {
             log.warn("Error getting user building ID for user {}: {}", user.getIdUsers(), e.getMessage());
         }
-        
+
         return null;
     }
 
@@ -359,7 +359,7 @@ public class ChannelService {
         List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
         boolean hasAccessViaResidentBuilding = userBuildings.stream()
                 .anyMatch(rb -> rb.getBuilding().getBuildingId().equals(buildingId));
-        
+
         if (hasAccessViaResidentBuilding) {
             return;
         }
@@ -508,7 +508,7 @@ public class ChannelService {
                     .orElseThrow(() -> new UnauthorizedAccessException("User not found: " + userId));
             realUserId = user.getIdUsers();
         }
-        
+
         ChannelMember member = ChannelMember.builder()
                 .channel(channel)
                 .userId(realUserId)

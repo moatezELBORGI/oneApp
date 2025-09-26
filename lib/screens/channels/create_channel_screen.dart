@@ -43,7 +43,7 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
 
     final currentBuildingId = authProvider.user?.buildingId;
     print('DEBUG: Loading residents for channel creation in building: $currentBuildingId');
-    
+
     if (currentBuildingId != null) {
       // Nettoyer complètement les données précédentes
       channelProvider.clearAllData();

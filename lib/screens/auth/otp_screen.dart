@@ -63,7 +63,7 @@ class _OtpScreenState extends State<OtpScreen> {
       if (widget.isLogin) {
         // Vérifier si l'utilisateur doit sélectionner un bâtiment
         final response = authProvider.user;
-        
+
         // Vérifier si la sélection de bâtiment est requise
         if (response != null && response.buildingId == null) {
           // Rediriger vers la sélection de bâtiment

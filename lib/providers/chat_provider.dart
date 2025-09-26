@@ -228,12 +228,12 @@ class ChatProvider with ChangeNotifier {
     _typingUsers.clear();
     _isLoading = false;
     _error = null;
-    
+
     // Déconnecter de tous les canaux WebSocket
     for (final channelId in _channelMessages.keys) {
       _wsService.unsubscribeFromChannel(channelId);
     }
-    
+
     notifyListeners();
   }
 

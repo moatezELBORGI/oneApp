@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 public class SelectBuildingRequest {
-    
+
     @NotBlank(message = "Building ID is required")
     private String buildingId;
 }

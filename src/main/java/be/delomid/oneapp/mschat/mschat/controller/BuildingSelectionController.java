@@ -30,7 +30,7 @@ public class BuildingSelectionController {
     public ResponseEntity<AuthResponse> selectBuilding(
             @Valid @RequestBody SelectBuildingRequest request,
             Authentication authentication) {
-        
+
         String userId = getUserId(authentication);
         AuthResponse response = buildingSelectionService.selectBuilding(userId, request.getBuildingId());
         return ResponseEntity.ok(response);

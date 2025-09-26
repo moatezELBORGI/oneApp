@@ -37,7 +37,7 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
       channelProvider.clearAllData();
 
       await channelProvider.loadBuildingResidents(currentBuildingId);
-      
+
       setState(() {
         _filteredResidents = channelProvider.buildingResidents
             .where((resident) => resident.id != authProvider.user?.id)

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mgi/providers/channel_provider.dart';
+import 'package:mgi/providers/chat_provider.dart';
+import 'package:mgi/providers/notification_provider.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
@@ -56,19 +59,19 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
     }
 
     print('DEBUG: Switching from building $_currentBuildingId to ${building.buildingId}');
-    
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     final success = await authProvider.selectBuilding(building.buildingId);
-    
+
     if (success && mounted) {
       print('DEBUG: Building switch successful, clearing all data');
-      
+
       // Nettoyer TOUTES les données des providers
       _clearAllProviderData();
-      
+
       print('DEBUG: All data cleared, navigating to main screen');
-      
+
       Navigator.of(context).pushNamedAndRemoveUntil('/main', (route) => false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -84,11 +87,11 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
       final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
       final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
-      
+
       chatProvider.clearAllData();
       channelProvider.clearAllData();
       notificationProvider.clearAllNotifications();
-      
+
       print('DEBUG: All provider data cleared for building switch');
     } catch (e) {
       print('DEBUG: Error clearing provider data: $e');
@@ -164,7 +167,7 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
       itemBuilder: (context, index) {
         final building = _buildings[index];
         final isCurrentBuilding = building.buildingId == _currentBuildingId;
-        
+
         return _buildBuildingCard(building, isCurrentBuilding);
       },
     );
@@ -199,24 +202,24 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
                     ),
                     child: building.buildingPicture != null
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(15),
-                            child: Image.network(
-                              building.buildingPicture!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
-                                  Icons.apartment,
-                                  size: 30,
-                                  color: _getRoleColor(building.roleInBuilding),
-                                );
-                              },
-                            ),
-                          )
-                        : Icon(
+                      borderRadius: BorderRadius.circular(15),
+                      child: Image.network(
+                        building.buildingPicture!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
                             Icons.apartment,
                             size: 30,
                             color: _getRoleColor(building.roleInBuilding),
-                          ),
+                          );
+                        },
+                      ),
+                    )
+                        : Icon(
+                      Icons.apartment,
+                      size: 30,
+                      color: _getRoleColor(building.roleInBuilding),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mgi/providers/channel_provider.dart';
+import 'package:mgi/providers/chat_provider.dart';
+import 'package:mgi/providers/notification_provider.dart';
+import 'package:mgi/providers/vote_provider.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
@@ -50,13 +54,13 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
 
   void _selectBuilding(BuildingSelection building) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     final success = await authProvider.selectBuilding(building.buildingId);
-    
+
     if (success && mounted) {
       // Nettoyer TOUTES les données des providers avant de naviguer
       _clearAllProviderData();
-      
+
       Navigator.of(context).pushReplacementNamed('/main');
     }
   }
@@ -67,12 +71,12 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
       final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
       final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
       final voteProvider = Provider.of<VoteProvider>(context, listen: false);
-      
+
       chatProvider.clearAllData();
       channelProvider.clearAllData();
       notificationProvider.clearAllNotifications();
       // Note: VoteProvider n'a pas de méthode clearAllData, on pourrait l'ajouter si nécessaire
-      
+
       print('DEBUG: All provider data cleared for building switch');
     } catch (e) {
       print('DEBUG: Error clearing provider data: $e');
@@ -230,24 +234,24 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
                     ),
                     child: building.buildingPicture != null
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(15),
-                            child: Image.network(
-                              building.buildingPicture!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
-                                  Icons.apartment,
-                                  size: 30,
-                                  color: _getRoleColor(building.roleInBuilding),
-                                );
-                              },
-                            ),
-                          )
-                        : Icon(
+                      borderRadius: BorderRadius.circular(15),
+                      child: Image.network(
+                        building.buildingPicture!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
                             Icons.apartment,
                             size: 30,
                             color: _getRoleColor(building.roleInBuilding),
-                          ),
+                          );
+                        },
+                      ),
+                    )
+                        : Icon(
+                      Icons.apartment,
+                      size: 30,
+                      color: _getRoleColor(building.roleInBuilding),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

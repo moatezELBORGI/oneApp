@@ -72,7 +72,7 @@ public class BuildingSelectionService {
         }
 
         log.debug("Building selected successfully: {} for user: {}", buildingId, userId);
-        
+
         return AuthResponse.builder()
                 .token(token)
                 .refreshToken(refreshToken)

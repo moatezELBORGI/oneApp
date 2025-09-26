@@ -13,9 +13,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -131,40 +134,40 @@ public class MessageService {
     private void validateChannelBuildingAccess(Long channelId, String userId) {
         Channel channel = channelRepository.findById(channelId)
                 .orElseThrow(() -> new ChannelNotFoundException("Channel not found: " + channelId));
-        
+
         // Si le canal n'a pas de bâtiment spécifique (PUBLIC), autoriser l'accès
         if (channel.getBuildingId() == null || channel.getType() == ChannelType.PUBLIC) {
             return;
         }
-        
+
         // Récupérer l'utilisateur et son bâtiment actuel
         Resident user = residentRepository.findByEmail(userId)
                 .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
-        
+
         String currentBuildingId = getCurrentUserBuildingId(user);
-        
+
         // Vérifier que le canal appartient au bâtiment actuel de l'utilisateur
         if (currentBuildingId == null || !currentBuildingId.equals(channel.getBuildingId())) {
             throw new UnauthorizedAccessException("Channel does not belong to user's current building");
         }
     }
-    
+
     private String getCurrentUserBuildingId(Resident user) {
         // Chercher dans les relations ResidentBuilding en priorité
         List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
         if (!userBuildings.isEmpty()) {
             return userBuildings.get(0).getBuilding().getBuildingId();
         }
-        
+
         // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
         if (user.getApartment() != null) {
             return user.getApartment().getBuilding().getBuildingId();
         }
-        
+
         return null;
     }
-    
+
     private String getCurrentBuildingFromContext() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

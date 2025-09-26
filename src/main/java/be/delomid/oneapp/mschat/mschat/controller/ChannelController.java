@@ -4,6 +4,7 @@ package be.delomid.oneapp.mschat.mschat.controller;
 import be.delomid.oneapp.mschat.mschat.dto.ChannelDto;
 import be.delomid.oneapp.mschat.mschat.dto.CreateChannelRequest;
 import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
+import be.delomid.oneapp.mschat.mschat.interceptor.JwtWebSocketInterceptor;
 import be.delomid.oneapp.mschat.mschat.service.ChannelService;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
 import be.delomid.oneapp.mschat.mschat.model.Resident;
