@@ -78,13 +78,35 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
 
     if (confirmed != true) return;
 
+    // Afficher un indicateur de chargement
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Changement d\'immeuble...'),
+          ],
+        ),
+      ),
+    );
     // Nettoyer toutes les données avant de changer de bâtiment
     BuildingContextService.clearAllProvidersData(context);
+    
+    // Forcer la mise à jour du contexte
+    BuildingContextService().setBuildingContext(building.buildingId);
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.selectBuilding(building.buildingId);
 
+    // Fermer l'indicateur de chargement
+    if (mounted) Navigator.of(context).pop();
     if (success && mounted) {
+      // Forcer le rechargement des données pour le nouveau bâtiment
+      BuildingContextService.forceRefreshForBuilding(context, building.buildingId);
+      
       // Retourner à l'écran principal et recharger les données
       Navigator.of(context).pop();
       

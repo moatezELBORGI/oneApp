@@ -34,6 +34,8 @@ class ChatProvider with ChangeNotifier {
     if (_currentBuildingContext != currentBuildingId) {
       print('DEBUG: Building context changed, clearing messages data');
       _channelMessages.clear();
+      _isLoadingMessages.clear();
+      _typingUsers.clear();
       _currentBuildingContext = currentBuildingId;
       notifyListeners();
       return [];
@@ -58,15 +60,25 @@ class ChatProvider with ChangeNotifier {
 
     // Vérifier le contexte du bâtiment
     final currentBuildingId = BuildingContextService().currentBuildingId;
-    if (_currentBuildingContext != currentBuildingId) {
+    if (_currentBuildingContext != currentBuildingId || refresh) {
       print('DEBUG: Building context changed, clearing messages before loading');
       _channelMessages.clear();
+      _isLoadingMessages.clear();
+      _typingUsers.clear();
       _currentBuildingContext = currentBuildingId;
     }
+    
+    // Ne pas charger si pas de contexte de bâtiment
+    if (currentBuildingId == null) {
+      print('DEBUG: No building context, skipping messages load');
+      return;
+    }
+    
     _isLoadingMessages[channelId] = true;
     notifyListeners();
 
     try {
+      print('DEBUG: Loading messages for channel $channelId in building: $currentBuildingId');
       final response = await _apiService.getChannelMessages(channelId);
       final messages = (response['content'] as List)
           .map((json) => Message.fromJson(json))
@@ -210,6 +222,13 @@ class ChatProvider with ChangeNotifier {
       return;
     }
 
+    // Vérifier que le message appartient au bâtiment actuel
+    // Cette vérification sera faite côté serveur, mais on peut ajouter une sécurité côté client
+    if (currentBuildingId == null) {
+      print('DEBUG: No building context, ignoring message');
+      return;
+    }
+
     final currentUser = StorageService.getUser();
     print('DEBUG: Received message from: ${message.senderId}, current user ID: ${currentUser?.id}, current user email: ${currentUser?.email}'); // Debug log
 
@@ -263,7 +282,8 @@ class ChatProvider with ChangeNotifier {
     _currentBuildingContext = null;
 
     // Déconnecter de tous les canaux WebSocket
-    for (final channelId in _channelMessages.keys) {
+    final channelIds = List<int>.from(_channelMessages.keys);
+    for (final channelId in channelIds) {
       _wsService.unsubscribeFromChannel(channelId);
     }
     
@@ -273,6 +293,22 @@ class ChatProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void forceRefreshForBuilding(String buildingId) {
+    print('DEBUG: Force refreshing chat data for building: $buildingId');
+    
+    // Nettoyer toutes les données
+    final channelIds = List<int>.from(_channelMessages.keys);
+    for (final channelId in channelIds) {
+      _wsService.unsubscribeFromChannel(channelId);
+    }
+    
+    _channelMessages.clear();
+    _isLoadingMessages.clear();
+    _typingUsers.clear();
+    _currentBuildingContext = buildingId;
+    
+    notifyListeners();
+  }
   void clearMessagesForBuilding() {
     // Nettoyer tous les messages et déconnecter les WebSockets
     for (final channelId in _channelMessages.keys) {

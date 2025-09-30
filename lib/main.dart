@@ -10,6 +10,7 @@ import 'providers/vote_provider.dart';
 import 'services/api_service.dart';
 import 'services/websocket_service.dart';
 import 'services/storage_service.dart';
+import 'services/building_context_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_screen.dart';
@@ -22,6 +23,7 @@ void main() async {
 
   // Initialize services
   await StorageService.init();
+  await BuildingContextService().loadBuildingContext();
 
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(

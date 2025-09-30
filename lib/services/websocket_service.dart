@@ -171,10 +171,19 @@ class WebSocketService {
 
   void clearAllSubscriptions() {
     // Nettoyer toutes les souscriptions sans déconnecter
-    for (final unsubscribe in _subscriptions.values) {
-      unsubscribe();
+    try {
+      final subscriptionIds = List<int>.from(_subscriptions.keys);
+      for (final channelId in subscriptionIds) {
+        final unsubscribe = _subscriptions[channelId];
+        if (unsubscribe != null) {
+          unsubscribe();
+        }
+      }
+      _subscriptions.clear();
+      print('DEBUG: All WebSocket subscriptions cleared (${subscriptionIds.length} channels)');
+    } catch (e) {
+      print('DEBUG: Error clearing WebSocket subscriptions: $e');
+      _subscriptions.clear();
     }
-    _subscriptions.clear();
-    print('DEBUG: All WebSocket subscriptions cleared');
   }
 }

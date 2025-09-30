@@ -52,6 +52,8 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
       // Nettoyer seulement les résidents pour éviter de perdre les canaux
       channelProvider.clearBuildingResidents();
       channelProvider.loadBuildingResidents(currentBuildingId);
+    } else {
+      print('DEBUG: No current building ID found for channel creation');
     }
   }
 
@@ -129,8 +131,10 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
             child: Consumer<ChannelProvider>(
               builder: (context, channelProvider, child) {
                 final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final currentBuildingId = authProvider.user?.buildingId;
                 final residents = channelProvider.buildingResidents
                     .where((resident) => resident.id != authProvider.user?.id)
+                    .where((resident) => resident.buildingId == currentBuildingId || resident.buildingId == null)
                     .toList();
 
                 if (channelProvider.isLoading) {
@@ -139,7 +143,7 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
 
                 if (residents.isEmpty) {
                   return const Center(
-                    child: Text('Aucun résident trouvé dans votre immeuble'),
+                    child: Text('Aucun résident trouvé dans l\'immeuble actuel'),
                   );
                 }
 

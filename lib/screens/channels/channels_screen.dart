@@ -41,17 +41,33 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
       _lastBuildingId = currentBuildingId;
       
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _initializeForCurrentBuilding();
+        if (currentBuildingId != null) {
+          _initializeForCurrentBuilding();
+        }
       });
     }
   }
 
   void _initializeForCurrentBuilding() {
     print('DEBUG: ChannelsScreen - Initializing for current building');
-    BuildingContextService.loadDataForCurrentBuilding(context);
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+    
+    if (currentBuildingId != null) {
+      BuildingContextService.forceRefreshForBuilding(context, currentBuildingId);
+    }
   }
 
   void _loadChannels() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+    
+    if (currentBuildingId == null) {
+      print('DEBUG: No building context, skipping channels load');
+      return;
+    }
+    
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
     channelProvider.loadChannels(refresh: true);
   }
@@ -70,18 +86,9 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
         title: const Text('Canaux'),
         backgroundColor: Colors.white,
         elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppTheme.primaryColor,
-          unselectedLabelColor: AppTheme.textSecondary,
-          indicatorColor: AppTheme.primaryColor,
-          tabs: const [
-            Tab(text: 'Tous'),
-            Tab(text: 'Groupes'),
-            Tab(text: 'Immeuble'),
-          ],
-        ),
         actions: [
+          const BuildingContextIndicator(),
+          const SizedBox(width: 8),
           IconButton(
             onPressed: () {
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -107,6 +114,17 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
             icon: const Icon(Icons.add),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppTheme.primaryColor,
+          unselectedLabelColor: AppTheme.textSecondary,
+          indicatorColor: AppTheme.primaryColor,
+          tabs: const [
+            Tab(text: 'Tous'),
+            Tab(text: 'Groupes'),
+            Tab(text: 'Immeuble'),
+          ],
+        ),
       ),
       body: TabBarView(
         controller: _tabController,

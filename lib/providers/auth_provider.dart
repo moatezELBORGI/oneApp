@@ -3,6 +3,7 @@ import '../models/user_model.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../services/websocket_service.dart';
+import '../services/building_context_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -23,9 +24,18 @@ class AuthProvider with ChangeNotifier {
     _loadUserFromStorage();
   }
 
-  void _loadUserFromStorage() {
+  void _loadUserFromStorage() async {
     _user = StorageService.getUser();
     _currentUserId = _user?.id;
+    
+    // Charger le contexte de bâtiment sauvegardé
+    await BuildingContextService().loadBuildingContext();
+    
+    // Mettre à jour le contexte avec le bâtiment de l'utilisateur
+    if (_user?.buildingId != null) {
+      BuildingContextService().setBuildingContext(_user!.buildingId!);
+    }
+    
     if (_user != null) {
       _connectWebSocket();
     }
@@ -117,6 +127,9 @@ class AuthProvider with ChangeNotifier {
       _currentUserId = _user!.id;
       await StorageService.saveUser(_user!);
       
+      // Nettoyer le contexte de bâtiment car l'utilisateur doit choisir
+      BuildingContextService().clearBuildingContext();
+      
       notifyListeners();
       return;
     }
@@ -136,6 +149,11 @@ class AuthProvider with ChangeNotifier {
     print('DEBUG: User logged in with ID: ${_user!.id}'); // Debug log
     await StorageService.saveUser(_user!);
 
+    // Mettre à jour le contexte de bâtiment
+    if (_user!.buildingId != null) {
+      BuildingContextService().setBuildingContext(_user!.buildingId!);
+      print('DEBUG: Building context set to: ${_user!.buildingId}');
+    }
 
     await _connectWebSocket();
     notifyListeners();
@@ -147,6 +165,11 @@ class AuthProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.selectBuilding(buildingId);
+      
+      // Mettre à jour immédiatement le contexte de bâtiment
+      BuildingContextService().setBuildingContext(buildingId);
+      print('DEBUG: Building context updated to: $buildingId before handling response');
+      
       await _handleLoginSuccess(response);
       return true;
     } catch (e) {
@@ -181,6 +204,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> logout() async {
     _wsService.disconnect();
+    BuildingContextService().clearBuildingContext();
     await StorageService.clearAll();
     _user = null;
     _clearError();

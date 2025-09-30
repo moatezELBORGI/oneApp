@@ -45,11 +45,17 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
       setState(() {
         _filteredResidents = channelProvider.buildingResidents
             .where((resident) => resident.id != authProvider.user?.id)
+            .where((resident) => resident.buildingId == currentBuildingId || resident.buildingId == null)
             .toList();
         print('DEBUG: Filtered to ${_filteredResidents.length} residents for building $currentBuildingId (excluding current user)');
         for (var resident in _filteredResidents) {
           print('DEBUG: Resident: ${resident.fullName} (ID: ${resident.id}, Building: ${resident.buildingId})');
         }
+      });
+    } else {
+      print('DEBUG: No current building ID found for user');
+      setState(() {
+        _filteredResidents = [];
       });
     } else {
       print('DEBUG: No current building ID found for user');
@@ -59,16 +65,19 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
   void _filterResidents(String query) {
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
 
     setState(() {
       if (query.isEmpty) {
         _filteredResidents = channelProvider.buildingResidents
             .where((resident) => resident.id != authProvider.user?.id)
+            .where((resident) => resident.buildingId == currentBuildingId || resident.buildingId == null)
             .toList();
       } else {
         _filteredResidents = channelProvider.buildingResidents
             .where((resident) =>
         resident.id != authProvider.user?.id &&
+            (resident.buildingId == currentBuildingId || resident.buildingId == null) &&
             resident.fullName.toLowerCase().contains(query.toLowerCase()))
             .toList();
       }

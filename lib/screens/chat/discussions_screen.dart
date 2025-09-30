@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/channel_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/building_context_service.dart';
+import '../../widgets/building_context_indicator.dart';
 import '../../utils/app_theme.dart';
 import '../../models/channel_model.dart';
 import 'chat_screen.dart';
@@ -39,17 +40,33 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
       _lastBuildingId = currentBuildingId;
       
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _initializeForCurrentBuilding();
+        if (currentBuildingId != null) {
+          _initializeForCurrentBuilding();
+        }
       });
     }
   }
 
   void _initializeForCurrentBuilding() {
     print('DEBUG: DiscussionsScreen - Initializing for current building');
-    BuildingContextService.loadDataForCurrentBuilding(context);
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+    
+    if (currentBuildingId != null) {
+      BuildingContextService.forceRefreshForBuilding(context, currentBuildingId);
+    }
   }
 
   void _loadDiscussions() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+    
+    if (currentBuildingId == null) {
+      print('DEBUG: No building context, skipping discussions load');
+      return;
+    }
+    
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
     channelProvider.loadChannels(refresh: true);
   }
@@ -63,6 +80,8 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
+          const BuildingContextIndicator(),
+          const SizedBox(width: 8),
           IconButton(
             onPressed: () {
               Navigator.of(context).push(

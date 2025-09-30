@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/channel_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/building_context_service.dart';
+import '../../widgets/building_context_indicator.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/notification_card.dart';
 import '../../widgets/quick_access_card.dart';
@@ -40,22 +41,44 @@ class _HomeScreenState extends State<HomeScreen> {
       _lastBuildingId = currentBuildingId;
       
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _initializeForCurrentBuilding();
+        if (currentBuildingId != null) {
+          _initializeForCurrentBuilding();
+        }
       });
     }
   }
+  
 
   void _initializeForCurrentBuilding() {
     print('DEBUG: HomeScreen - Initializing for current building');
     
-    // Nettoyer et charger les données pour le bâtiment actuel
-    BuildingContextService.clearAllProvidersData(context);
-    BuildingContextService.loadDataForCurrentBuilding(context);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+    
+    if (currentBuildingId != null) {
+      // Nettoyer et charger les données pour le bâtiment actuel
+      BuildingContextService.clearAllProvidersData(context);
+      
+      // Attendre un peu puis charger
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          BuildingContextService.forceRefreshForBuilding(context, currentBuildingId);
+        }
+      });
+    }
   }
 
   void _loadData() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+    
+    if (currentBuildingId == null) {
+      print('DEBUG: No building context, skipping data load');
+      return;
+    }
+    
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    channelProvider.loadChannels();
+    channelProvider.loadChannels(refresh: true);
   }
 
 
@@ -148,7 +171,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: AppTheme.textPrimary,
                     ),
                   ),
-                  if (user?.apartmentId != null)
+                  Row(
+                    children: [
+                      if (user?.apartmentId != null)
                     Text(
                       'Appartement ${user!.apartmentId}',
                       style: const TextStyle(
@@ -156,6 +181,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: AppTheme.textSecondary,
                       ),
                     ),
+                      const SizedBox(width: 8),
+                      const BuildingContextIndicator(),
+                    ],
+                  ),
                 ],
               ),
             ),

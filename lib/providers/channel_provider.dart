@@ -24,22 +24,39 @@ class ChannelProvider with ChangeNotifier {
 
     // Vérifier le contexte du bâtiment
     final currentBuildingId = BuildingContextService().currentBuildingId;
-    if (_currentBuildingContext != currentBuildingId) {
+    if (_currentBuildingContext != currentBuildingId || refresh) {
       print('DEBUG: Building context changed, clearing channels data');
       _channels.clear();
       _currentBuildingContext = currentBuildingId;
     }
+    
+    // Ne pas charger si pas de contexte de bâtiment
+    if (currentBuildingId == null) {
+      print('DEBUG: No building context, skipping channels load');
+      _setLoading(false);
+      return;
+    }
+    
     _setLoading(true);
     _clearError();
 
     try {
-      print('DEBUG: Loading channels for current building context');
+      print('DEBUG: Loading channels for building context: $currentBuildingId');
       final response = await _apiService.getChannels();
       _channels = (response['content'] as List)
           .map((json) => Channel.fromJson(json))
           .toList();
 
-      print('DEBUG: Loaded ${_channels.length} channels for current building');
+      // Filtrer les canaux pour ne garder que ceux du bâtiment actuel
+      _channels = _channels.where((channel) {
+        // Garder les canaux sans bâtiment spécifique (PUBLIC, etc.)
+        if (channel.buildingId == null) return true;
+        
+        // Garder seulement les canaux du bâtiment actuel
+        return channel.buildingId == currentBuildingId;
+      }).toList();
+
+      print('DEBUG: Loaded ${_channels.length} channels for building: $currentBuildingId');
       
       // Sort channels by last activity
       _channels.sort((a, b) {
@@ -102,12 +119,18 @@ class ChannelProvider with ChangeNotifier {
   Future<void> loadBuildingResidents(String buildingId) async {
     // Vérifier le contexte du bâtiment
     final currentBuildingId = BuildingContextService().currentBuildingId;
-    if (buildingId != "current" && buildingId != currentBuildingId) {
+    if (buildingId != "current" && buildingId != currentBuildingId && currentBuildingId != null) {
       print('DEBUG: Requested building $buildingId does not match current context $currentBuildingId');
       return;
     }
+    
+    // Si pas de contexte de bâtiment, ne pas charger
+    if (currentBuildingId == null && buildingId == "current") {
+      print('DEBUG: No building context, skipping residents load');
+      return;
+    }
 
-    print('DEBUG: Loading residents for current building context');
+    print('DEBUG: Loading residents for building context: $currentBuildingId');
     _setLoading(true);
     _clearError();
 
@@ -122,7 +145,14 @@ class ChannelProvider with ChangeNotifier {
           .map((json) => User.fromJson(json))
           .toList();
 
-      print('DEBUG: Parsed ${_buildingResidents.length} residents for current building');
+      // Filtrer pour s'assurer qu'on n'a que les résidents du bâtiment actuel
+      if (currentBuildingId != null) {
+        _buildingResidents = _buildingResidents
+            .where((resident) => resident.buildingId == currentBuildingId || resident.buildingId == null)
+            .toList();
+      }
+
+      print('DEBUG: Parsed ${_buildingResidents.length} residents for building: $currentBuildingId');
       for (var resident in _buildingResidents) {
         print('DEBUG: Resident: ${resident.fullName} (Building: ${resident.buildingId})');
       }
@@ -201,6 +231,18 @@ class ChannelProvider with ChangeNotifier {
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
+  }
+  void forceRefreshForBuilding(String buildingId) {
+    print('DEBUG: Force refreshing channels for building: $buildingId');
+    
+    // Nettoyer les données existantes
+    _channels.clear();
+    _buildingResidents.clear();
+    _currentBuildingContext = buildingId;
+    
+    // Recharger immédiatement
+    loadChannels(refresh: true);
+    loadBuildingResidents(buildingId);
   }
 
   void _setError(String error) {

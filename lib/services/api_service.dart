@@ -102,13 +102,18 @@ class ApiService {
 
   // Channel endpoints
   Future<Map<String, dynamic>> getChannels({int page = 0, int size = 20}) async {
-    print('DEBUG: API - Getting channels for current building context');
+    final token = await StorageService.getToken();
+    print('DEBUG: API - Getting channels for current building context with token: ${token?.substring(0, 20)}...');
+    
     final response = await http.get(
       Uri.parse('$baseUrl/channels?page=$page&size=$size'),
       headers: await _getHeaders(),
     );
 
     print('DEBUG: API - Channels response status: ${response.statusCode}');
+    if (response.statusCode != 200) {
+      print('DEBUG: API - Channels response body: ${response.body}');
+    }
     return _handleResponse(response);
   }
 
@@ -247,20 +252,24 @@ class ApiService {
 
   // Residents endpoints
   Future<List<dynamic>> getBuildingResidents(String buildingId) async {
-    print('DEBUG: Making API call to get building residents for: $buildingId');
+    final token = await StorageService.getToken();
+    print('DEBUG: Making API call to get building residents for: $buildingId with token: ${token?.substring(0, 20)}...');
 
     // Si buildingId est "current", utiliser l'endpoint spécial
     final endpoint = buildingId == "current" 
         ? '$baseUrl/channels/current-building/residents'
         : '$baseUrl/channels/building/$buildingId/residents';
 
+    print('DEBUG: Using endpoint: $endpoint');
     final response = await http.get(
       Uri.parse(endpoint),
       headers: await _getHeaders(),
     );
 
     print('DEBUG: Building residents API response status: ${response.statusCode}');
-    print('DEBUG: Building residents API response body: ${response.body}');
+    if (response.statusCode != 200) {
+      print('DEBUG: Building residents API response body: ${response.body}');
+    }
 
     return _handleListResponse(response);
   }

@@ -52,12 +52,34 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
   void _selectBuilding(BuildingSelection building) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
+    // Afficher un indicateur de chargement
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Connexion en cours...'),
+          ],
+        ),
+      ),
+    );
+
     // Nettoyer toutes les données avant de changer de bâtiment
     BuildingContextService.clearAllProvidersData(context);
-
+    
+    // Forcer la mise à jour du contexte
+    BuildingContextService().setBuildingContext(building.buildingId);
     final success = await authProvider.selectBuilding(building.buildingId);
 
+    // Fermer l'indicateur de chargement
+    if (mounted) Navigator.of(context).pop();
     if (success && mounted) {
+      // Forcer le rechargement des données pour le nouveau bâtiment
+      BuildingContextService.forceRefreshForBuilding(context, building.buildingId);
+      
       Navigator.of(context).pushReplacementNamed('/main');
     }
   }

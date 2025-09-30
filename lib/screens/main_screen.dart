@@ -53,18 +53,30 @@ class _MainScreenState extends State<MainScreen> {
       _lastBuildingId = currentBuildingId;
       
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _refreshDataForCurrentBuilding();
+        if (currentBuildingId != null) {
+          _refreshDataForCurrentBuilding();
+        }
       });
     }
   }
+  
   void _refreshDataForCurrentBuilding() {
     print('DEBUG: Refreshing data for current building in MainScreen');
     
-    // Nettoyer toutes les données existantes
-    BuildingContextService.clearAllProvidersData(context);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
     
-    // Charger les nouvelles données pour le bâtiment actuel
-    BuildingContextService.loadDataForCurrentBuilding(context);
+    if (currentBuildingId != null) {
+      // Nettoyer toutes les données existantes
+      BuildingContextService.clearAllProvidersData(context);
+      
+      // Attendre un peu puis charger les nouvelles données
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          BuildingContextService.forceRefreshForBuilding(context, currentBuildingId);
+        }
+      });
+    }
 
     print('DEBUG: Data refresh completed for current building');
   }
