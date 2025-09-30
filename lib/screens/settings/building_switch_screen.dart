@@ -1,4 +1,136 @@
-         onPressed: _loadUserBuildings,
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../utils/app_theme.dart';
+import '../../models/building_selection_model.dart';
+import '../../services/api_service.dart';
+import '../../services/building_context_service.dart';
+
+class BuildingSwitchScreen extends StatefulWidget {
+  const BuildingSwitchScreen({super.key});
+
+  @override
+  State<BuildingSwitchScreen> createState() => _BuildingSwitchScreenState();
+}
+
+class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
+  final ApiService _apiService = ApiService();
+  List<BuildingSelection> _buildings = [];
+  bool _isLoading = true;
+  String? _error;
+  String? _currentBuildingId;
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentBuildingId();
+    _loadUserBuildings();
+  }
+
+  void _getCurrentBuildingId() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _currentBuildingId = authProvider.user?.buildingId;
+  }
+
+  void _loadUserBuildings() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final response = await _apiService.getUserBuildings();
+      final buildings = (response as List)
+          .map((json) => BuildingSelection.fromJson(json))
+          .toList();
+
+      setState(() {
+        _buildings = buildings;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _switchBuilding(BuildingSelection building) async {
+    // Afficher un dialogue de confirmation
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Changer d\'immeuble'),
+        content: Text('Voulez-vous vous connecter à "${building.buildingLabel}" ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Nettoyer toutes les données avant de changer de bâtiment
+    BuildingContextService.clearAllProvidersData(context);
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.selectBuilding(building.buildingId);
+
+    if (success && mounted) {
+      // Retourner à l'écran principal et recharger les données
+      Navigator.of(context).pop();
+      
+      // Afficher un message de succès
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Connecté à ${building.buildingLabel}'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        title: const Text('Changer d\'immeuble'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: _buildBuildingsList(),
+    );
+  }
+
+  Widget _buildBuildingsList() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Erreur: $_error',
+              style: TextStyle(color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadUserBuildings,
               child: const Text('Réessayer'),
             ),
           ],

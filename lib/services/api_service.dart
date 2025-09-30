@@ -247,16 +247,20 @@ class ApiService {
 
   // Residents endpoints
   Future<List<dynamic>> getBuildingResidents(String buildingId) async {
-    // Utiliser l'endpoint qui récupère les résidents du bâtiment actuel de l'utilisateur
-    print('DEBUG: Making API call to get current building residents');
+    print('DEBUG: Making API call to get building residents for: $buildingId');
+
+    // Si buildingId est "current", utiliser l'endpoint spécial
+    final endpoint = buildingId == "current" 
+        ? '$baseUrl/channels/current-building/residents'
+        : '$baseUrl/channels/building/$buildingId/residents';
 
     final response = await http.get(
-      Uri.parse('$baseUrl/channels/current-building/residents'),
+      Uri.parse(endpoint),
       headers: await _getHeaders(),
     );
 
-    print('DEBUG: Current building residents API response status: ${response.statusCode}');
-    print('DEBUG: Current building residents API response body: ${response.body}');
+    print('DEBUG: Building residents API response status: ${response.statusCode}');
+    print('DEBUG: Building residents API response body: ${response.body}');
 
     return _handleListResponse(response);
   }

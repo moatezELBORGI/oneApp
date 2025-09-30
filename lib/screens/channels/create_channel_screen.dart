@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/channel_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/building_context_service.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
@@ -45,6 +46,9 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
     print('DEBUG: Loading residents for channel creation in building: $currentBuildingId');
 
     if (currentBuildingId != null) {
+      // Mettre à jour le contexte du bâtiment
+      BuildingContextService().setBuildingContext(currentBuildingId);
+      
       // Nettoyer seulement les résidents pour éviter de perdre les canaux
       channelProvider.clearBuildingResidents();
       channelProvider.loadBuildingResidents(currentBuildingId);

@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:mgi/providers/channel_provider.dart';
-import 'package:mgi/providers/chat_provider.dart';
-import 'package:mgi/providers/notification_provider.dart';
-import 'package:mgi/providers/vote_provider.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
 import '../../models/building_selection_model.dart';
 import '../../services/api_service.dart';
+import '../../services/building_context_service.dart';
 
 class BuildingSelectionScreen extends StatefulWidget {
   const BuildingSelectionScreen({super.key});
@@ -55,8 +52,8 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
   void _selectBuilding(BuildingSelection building) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    // Nettoyer TOUTES les données avant de changer de bâtiment
-    _clearAllProviderData();
+    // Nettoyer toutes les données avant de changer de bâtiment
+    BuildingContextService.clearAllProvidersData(context);
 
     final success = await authProvider.selectBuilding(building.buildingId);
 
@@ -65,24 +62,6 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
     }
   }
 
-  void _clearAllProviderData() {
-    try {
-      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-      final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-      final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
-      final voteProvider = Provider.of<VoteProvider>(context, listen: false);
-      final voteProvider = Provider.of<VoteProvider>(context, listen: false);
-
-      chatProvider.clearAllData();
-      channelProvider.clearAllData();
-      notificationProvider.clearAllNotifications();
-      voteProvider.clearAllData();
-
-      print('DEBUG: All provider data cleared for building switch');
-    } catch (e) {
-      print('DEBUG: Error clearing provider data: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

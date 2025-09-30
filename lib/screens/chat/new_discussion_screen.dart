@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/channel_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/building_context_service.dart';
 import '../../utils/app_theme.dart';
 import '../../models/user_model.dart';
 import 'chat_screen.dart';
@@ -33,6 +34,9 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
     print('DEBUG: Loading residents for current building: $currentBuildingId');
 
     if (currentBuildingId != null) {
+      // Mettre à jour le contexte du bâtiment
+      BuildingContextService().setBuildingContext(currentBuildingId);
+      
       // Nettoyer seulement les résidents pour éviter de perdre les canaux
       channelProvider.clearBuildingResidents();
 

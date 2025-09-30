@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/channel_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../services/building_context_service.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/notification_card.dart';
 import '../../widgets/quick_access_card.dart';
@@ -16,53 +17,47 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String? _lastBuildingId;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _clearAndLoadData();
+      _initializeForCurrentBuilding();
     });
-  }
-
-  void _clearAndLoadData() {
-    print('DEBUG: HomeScreen - Clearing and loading data for current building');
-    
-    // Nettoyer les données existantes
-    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
-
-    chatProvider.clearAllData();
-    channelProvider.clearAllData();
-    notificationProvider.clearAllNotifications();
-
-    // Charger les nouvelles données
-    _loadData();
-  }
-
-  void _loadData() {
-    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    channelProvider.loadChannels();
-  }
-
-  void _loadDataOld() {
-    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    channelProvider.loadChannels();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Recharger les données si l'utilisateur change de bâtiment
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
-    });
+    
+    // Vérifier si le bâtiment a changé
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+    
+    if (_lastBuildingId != currentBuildingId) {
+      print('DEBUG: HomeScreen - Building changed from $_lastBuildingId to $currentBuildingId');
+      _lastBuildingId = currentBuildingId;
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initializeForCurrentBuilding();
+      });
+    }
+  }
+
+  void _initializeForCurrentBuilding() {
+    print('DEBUG: HomeScreen - Initializing for current building');
+    
+    // Nettoyer et charger les données pour le bâtiment actuel
+    BuildingContextService.clearAllProvidersData(context);
+    BuildingContextService.loadDataForCurrentBuilding(context);
   }
 
   void _loadData() {
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
     channelProvider.loadChannels();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            _loadData();
+            _initializeForCurrentBuilding();
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),

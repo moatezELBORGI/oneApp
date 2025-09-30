@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../providers/channel_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/vote_provider.dart';
+import '../services/building_context_service.dart';
 import '../utils/app_theme.dart';
 import 'home/home_screen.dart';
 import 'channels/channels_screen.dart';
@@ -21,6 +22,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  String? _lastBuildingId;
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -33,26 +35,38 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    // S'assurer que les données sont fraîches pour le bâtiment actuel
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshDataForCurrentBuilding();
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Vérifier si le bâtiment a changé
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+    
+    if (_lastBuildingId != currentBuildingId) {
+      print('DEBUG: Building changed from $_lastBuildingId to $currentBuildingId');
+      _lastBuildingId = currentBuildingId;
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _refreshDataForCurrentBuilding();
+      });
+    }
+  }
   void _refreshDataForCurrentBuilding() {
     print('DEBUG: Refreshing data for current building in MainScreen');
     
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
-
     // Nettoyer toutes les données existantes
-    chatProvider.clearAllData();
-    channelProvider.clearAllData();
-    notificationProvider.clearAllNotifications();
+    BuildingContextService.clearAllProvidersData(context);
+    
+    // Charger les nouvelles données pour le bâtiment actuel
+    BuildingContextService.loadDataForCurrentBuilding(context);
 
-    print('DEBUG: All provider data cleared for current building');
+    print('DEBUG: Data refresh completed for current building');
   }
 
   @override

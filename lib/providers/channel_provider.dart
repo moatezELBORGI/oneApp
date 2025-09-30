@@ -3,6 +3,7 @@ import '../models/channel_model.dart';
 import '../models/user_model.dart';
 import '../models/message_model.dart';
 import '../services/api_service.dart';
+import '../services/building_context_service.dart';
 
 class ChannelProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -11,6 +12,7 @@ class ChannelProvider with ChangeNotifier {
   List<User> _buildingResidents = [];
   bool _isLoading = false;
   String? _error;
+  String? _currentBuildingContext;
 
   List<Channel> get channels => _channels;
   List<User> get buildingResidents => _buildingResidents;
@@ -20,6 +22,13 @@ class ChannelProvider with ChangeNotifier {
   Future<void> loadChannels({bool refresh = false}) async {
     if (_isLoading && !refresh) return;
 
+    // Vérifier le contexte du bâtiment
+    final currentBuildingId = BuildingContextService().currentBuildingId;
+    if (_currentBuildingContext != currentBuildingId) {
+      print('DEBUG: Building context changed, clearing channels data');
+      _channels.clear();
+      _currentBuildingContext = currentBuildingId;
+    }
     _setLoading(true);
     _clearError();
 
@@ -91,6 +100,13 @@ class ChannelProvider with ChangeNotifier {
   }
 
   Future<void> loadBuildingResidents(String buildingId) async {
+    // Vérifier le contexte du bâtiment
+    final currentBuildingId = BuildingContextService().currentBuildingId;
+    if (buildingId != "current" && buildingId != currentBuildingId) {
+      print('DEBUG: Requested building $buildingId does not match current context $currentBuildingId');
+      return;
+    }
+
     print('DEBUG: Loading residents for current building context');
     _setLoading(true);
     _clearError();
@@ -173,6 +189,7 @@ class ChannelProvider with ChangeNotifier {
     _buildingResidents.clear();
     _isLoading = false;
     _error = null;
+    _currentBuildingContext = null;
     notifyListeners();
   }
 

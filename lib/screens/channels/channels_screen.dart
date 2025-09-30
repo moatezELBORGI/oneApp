@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/channel_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/building_context_service.dart';
 import '../../utils/app_theme.dart';
 import '../../models/channel_model.dart';
 import '../chat/chat_screen.dart';
@@ -16,42 +17,38 @@ class ChannelsScreen extends StatefulWidget {
 
 class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  String? _lastBuildingId;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _clearAndLoadChannels();
+      _initializeForCurrentBuilding();
     });
-  }
-
-  void _clearAndLoadChannels() {
-    print('DEBUG: ChannelsScreen - Clearing and loading channels for current building');
-    
-    // Nettoyer les données existantes
-    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-
-    chatProvider.clearAllData();
-    channelProvider.clearAllData();
-
-    // Charger les nouvelles données
-    _loadChannels();
-  }
-
-  void _loadChannelsOld() {
-    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    channelProvider.loadChannels(refresh: true);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Recharger les données si l'utilisateur change de bâtiment
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadChannels();
-    });
+    
+    // Vérifier si le bâtiment a changé
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+    
+    if (_lastBuildingId != currentBuildingId) {
+      print('DEBUG: ChannelsScreen - Building changed from $_lastBuildingId to $currentBuildingId');
+      _lastBuildingId = currentBuildingId;
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initializeForCurrentBuilding();
+      });
+    }
+  }
+
+  void _initializeForCurrentBuilding() {
+    print('DEBUG: ChannelsScreen - Initializing for current building');
+    BuildingContextService.loadDataForCurrentBuilding(context);
   }
 
   void _loadChannels() {

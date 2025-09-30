@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 import '../services/api_service.dart';
 import '../services/websocket_service.dart';
 import '../services/storage_service.dart';
+import '../services/building_context_service.dart';
 
 class ChatProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -14,6 +15,7 @@ class ChatProvider with ChangeNotifier {
   final Map<int, List<Message>> _channelMessages = {};
   final Map<int, bool> _isLoadingMessages = {};
   final Map<String, bool> _typingUsers = {};
+  String? _currentBuildingContext;
 
   bool _isLoading = false;
   String? _error;
@@ -27,6 +29,16 @@ class ChatProvider with ChangeNotifier {
   }
 
   List<Message> getChannelMessages(int channelId) {
+    // Vérifier le contexte du bâtiment
+    final currentBuildingId = BuildingContextService().currentBuildingId;
+    if (_currentBuildingContext != currentBuildingId) {
+      print('DEBUG: Building context changed, clearing messages data');
+      _channelMessages.clear();
+      _currentBuildingContext = currentBuildingId;
+      notifyListeners();
+      return [];
+    }
+    
     return _channelMessages[channelId] ?? [];
   }
 
@@ -44,6 +56,13 @@ class ChatProvider with ChangeNotifier {
   Future<void> loadChannelMessages(int channelId, {bool refresh = false}) async {
     if (_isLoadingMessages[channelId] == true) return;
 
+    // Vérifier le contexte du bâtiment
+    final currentBuildingId = BuildingContextService().currentBuildingId;
+    if (_currentBuildingContext != currentBuildingId) {
+      print('DEBUG: Building context changed, clearing messages before loading');
+      _channelMessages.clear();
+      _currentBuildingContext = currentBuildingId;
+    }
     _isLoadingMessages[channelId] = true;
     notifyListeners();
 
@@ -184,6 +203,13 @@ class ChatProvider with ChangeNotifier {
   }
 
   void _handleNewMessage(Message message) {
+    // Vérifier le contexte du bâtiment
+    final currentBuildingId = BuildingContextService().currentBuildingId;
+    if (_currentBuildingContext != currentBuildingId) {
+      print('DEBUG: Ignoring message - building context mismatch');
+      return;
+    }
+
     final currentUser = StorageService.getUser();
     print('DEBUG: Received message from: ${message.senderId}, current user ID: ${currentUser?.id}, current user email: ${currentUser?.email}'); // Debug log
 
@@ -234,6 +260,7 @@ class ChatProvider with ChangeNotifier {
     _typingUsers.clear();
     _isLoading = false;
     _error = null;
+    _currentBuildingContext = null;
 
     // Déconnecter de tous les canaux WebSocket
     for (final channelId in _channelMessages.keys) {

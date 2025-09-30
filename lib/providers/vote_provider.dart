@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/vote_model.dart';
 import '../services/api_service.dart';
+import '../services/building_context_service.dart';
 
 class VoteProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -9,19 +10,46 @@ class VoteProvider with ChangeNotifier {
   final Map<int, Vote> _votes = {};
   bool _isLoading = false;
   String? _error;
+  String? _currentBuildingContext;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
 
   List<Vote> getChannelVotes(int channelId) {
+    // Vérifier le contexte du bâtiment
+    final currentBuildingId = BuildingContextService().currentBuildingId;
+    if (_currentBuildingContext != currentBuildingId) {
+      print('DEBUG: Building context changed, clearing votes data');
+      _channelVotes.clear();
+      _votes.clear();
+      _currentBuildingContext = currentBuildingId;
+      notifyListeners();
+      return [];
+    }
+    
     return _channelVotes[channelId] ?? [];
   }
 
   Vote? getVoteById(int voteId) {
+    // Vérifier le contexte du bâtiment
+    final currentBuildingId = BuildingContextService().currentBuildingId;
+    if (_currentBuildingContext != currentBuildingId) {
+      return null;
+    }
+    
     return _votes[voteId];
   }
 
   Future<void> loadChannelVotes(int channelId) async {
+    // Vérifier le contexte du bâtiment
+    final currentBuildingId = BuildingContextService().currentBuildingId;
+    if (_currentBuildingContext != currentBuildingId) {
+      print('DEBUG: Building context changed, clearing votes before loading');
+      _channelVotes.clear();
+      _votes.clear();
+      _currentBuildingContext = currentBuildingId;
+    }
+
     _setLoading(true);
     _clearError();
 
@@ -161,6 +189,7 @@ class VoteProvider with ChangeNotifier {
     _votes.clear();
     _isLoading = false;
     _error = null;
+    _currentBuildingContext = null;
     notifyListeners();
   }
 }
