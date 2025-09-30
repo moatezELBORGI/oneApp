@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -45,15 +47,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
-                
+
                 if (jwtConfig.validateToken(jwt, userDetails.getUsername())) {
+                    // Extract building context from JWT
+                    String buildingId = jwtConfig.extractBuildingId(jwt);
+                    String userId = jwtConfig.extractUserId(jwt);
+                    String role = jwtConfig.extractRole(jwt);
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
                             userDetails.getAuthorities()
                     );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    // Store building context in authentication details
+                    Map<String, Object> details = new HashMap<>();
+                    details.put("buildingId", buildingId);
+                    details.put("userId", userId);
+                    details.put("role", role);
+                    details.put("request", new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    authToken.setDetails(details);
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                    log.debug("User {} authenticated with building context: {}", userEmail, buildingId);
                 }
             }
         } catch (Exception e) {
