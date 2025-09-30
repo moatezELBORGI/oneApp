@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -133,19 +134,21 @@ public class ChannelService {
     }
 
     public Page<ChannelDto> getUserChannels(String userId, Pageable pageable) {
-        log.debug("Getting channels for user: {}", userId);
+        log.info("Getting channels for user: {}", userId);
 
         // Récupérer le bâtiment actuel depuis le JWT
         String currentBuildingId = getCurrentBuildingFromContext();
 
-        log.debug("Current building from JWT: {}", currentBuildingId);
+        log.info("Current building from JWT: {}", currentBuildingId);
 
         if (currentBuildingId == null) {
+            log.warn("Building ID not found in JWT context for user: {}, using database fallback", userId);
             // Fallback: récupérer depuis la base de données
             Resident user = residentRepository.findByEmail(userId)
                     .or(() -> residentRepository.findById(userId))
                     .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
             currentBuildingId = getCurrentUserBuildingId(user);
+            log.info("Building ID from database: {}", currentBuildingId);
         }
 
         // Récupérer l'utilisateur pour obtenir son ID réel
@@ -153,8 +156,16 @@ public class ChannelService {
                 .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
 
+        // Vérifier que le buildingId est défini
+        if (currentBuildingId == null) {
+            log.error("Building ID is null for user: {}. User must select a building.", userId);
+            throw new UnauthorizedAccessException("No building selected. Please select a building first.");
+        }
+
         // Utiliser l'ID utilisateur réel pour la requête avec filtrage par bâtiment
+        log.info("Fetching channels for userId: {} and buildingId: {}", user.getIdUsers(), currentBuildingId);
         Page<Channel> channels = channelRepository.findChannelsByUserIdAndBuilding(user.getIdUsers(), currentBuildingId, pageable);
+        log.info("Found {} channels for user {} in building {}", channels.getTotalElements(), userId, currentBuildingId);
         return channels.map(channel -> convertToDto(channel, userId));
     }
 
@@ -321,9 +332,27 @@ public class ChannelService {
     private String getCurrentBuildingFromContext() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
-                JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
-                return principal.getBuildingId();
+            if (authentication != null) {
+                // Vérifier si c'est un JwtPrincipal (WebSocket)
+                if (authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
+                    JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
+                    return principal.getBuildingId();
+                }
+                // Sinon extraire depuis les details (HTTP)
+                Object details = authentication.getDetails();
+                log.debug("Authentication details type: {}", details != null ? details.getClass().getName() : "null");
+                if (details instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> detailsMap = (Map<String, Object>) details;
+                    log.debug("Details map keys: {}", detailsMap.keySet());
+                    Object buildingId = detailsMap.get("buildingId");
+                    if (buildingId != null) {
+                        log.info("Building ID extracted from authentication details: {}", buildingId);
+                        return buildingId.toString();
+                    } else {
+                        log.warn("buildingId key not found in authentication details");
+                    }
+                }
             }
         } catch (Exception e) {
             log.debug("Could not extract building from JWT context: {}", e.getMessage());

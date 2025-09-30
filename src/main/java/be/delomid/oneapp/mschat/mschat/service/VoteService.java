@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -272,9 +273,23 @@ public class VoteService {
     private String getCurrentBuildingFromContext() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
-                JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
-                return principal.getBuildingId();
+            if (authentication != null) {
+                // Vérifier si c'est un JwtPrincipal (WebSocket)
+                if (authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
+                    JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
+                    return principal.getBuildingId();
+                }
+                // Sinon extraire depuis les details (HTTP)
+                Object details = authentication.getDetails();
+                if (details instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> detailsMap = (Map<String, Object>) details;
+                    Object buildingId = detailsMap.get("buildingId");
+                    if (buildingId != null) {
+                        log.debug("Building ID extracted from authentication details: {}", buildingId);
+                        return buildingId.toString();
+                    }
+                }
             }
         } catch (Exception e) {
             log.debug("Could not extract building from JWT context: {}", e.getMessage());
