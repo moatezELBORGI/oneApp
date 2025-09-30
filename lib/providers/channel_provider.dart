@@ -24,11 +24,14 @@ class ChannelProvider with ChangeNotifier {
     _clearError();
 
     try {
+      print('DEBUG: Loading channels for current building context');
       final response = await _apiService.getChannels();
       _channels = (response['content'] as List)
           .map((json) => Channel.fromJson(json))
           .toList();
 
+      print('DEBUG: Loaded ${_channels.length} channels for current building');
+      
       // Sort channels by last activity
       _channels.sort((a, b) {
         final aTime = a.lastMessage?.createdAt ?? a.createdAt;
@@ -37,6 +40,7 @@ class ChannelProvider with ChangeNotifier {
       });
 
     } catch (e) {
+      print('DEBUG: Error loading channels: $e');
       _setError(e.toString());
     } finally {
       _setLoading(false);
@@ -172,12 +176,12 @@ class ChannelProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void _setLoading(bool loading) {
+  void clearBuildingResidents() {
+    _buildingResidents.clear();
+    notifyListeners();
+  }
 
-    void clearBuildingResidents() {
-      _buildingResidents.clear();
-      notifyListeners();
-    }
+  void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
   }

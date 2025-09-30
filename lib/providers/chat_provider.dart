@@ -187,6 +187,12 @@ class ChatProvider with ChangeNotifier {
     final currentUser = StorageService.getUser();
     print('DEBUG: Received message from: ${message.senderId}, current user ID: ${currentUser?.id}, current user email: ${currentUser?.email}'); // Debug log
 
+    // Vérifier que le message appartient à un canal de l'utilisateur actuel
+    if (!_channelMessages.containsKey(message.channelId)) {
+      print('DEBUG: Ignoring message for channel ${message.channelId} - not in current building context');
+      return;
+    }
+
     final channelMessages = _channelMessages[message.channelId] ?? [];
 
     // Ajouter le nouveau message s'il n'existe pas déjà
@@ -233,7 +239,21 @@ class ChatProvider with ChangeNotifier {
     for (final channelId in _channelMessages.keys) {
       _wsService.unsubscribeFromChannel(channelId);
     }
+    
+    // Nettoyer toutes les souscriptions WebSocket
+    _wsService.clearAllSubscriptions();
 
+    notifyListeners();
+  }
+
+  void clearMessagesForBuilding() {
+    // Nettoyer tous les messages et déconnecter les WebSockets
+    for (final channelId in _channelMessages.keys) {
+      _wsService.unsubscribeFromChannel(channelId);
+    }
+    _channelMessages.clear();
+    _isLoadingMessages.clear();
+    _typingUsers.clear();
     notifyListeners();
   }
 

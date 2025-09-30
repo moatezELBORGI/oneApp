@@ -22,6 +22,34 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _clearAndLoadChannels();
+    });
+  }
+
+  void _clearAndLoadChannels() {
+    print('DEBUG: ChannelsScreen - Clearing and loading channels for current building');
+    
+    // Nettoyer les données existantes
+    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+
+    chatProvider.clearAllData();
+    channelProvider.clearAllData();
+
+    // Charger les nouvelles données
+    _loadChannels();
+  }
+
+  void _loadChannelsOld() {
+    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+    channelProvider.loadChannels(refresh: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recharger les données si l'utilisateur change de bâtiment
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadChannels();
     });
   }

@@ -155,4 +155,12 @@ class VoteProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  void clearAllData() {
+    _channelVotes.clear();
+    _votes.clear();
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
 }

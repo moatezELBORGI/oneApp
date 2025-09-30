@@ -116,6 +116,10 @@ class AuthProvider with ChangeNotifier {
       _user = User.fromJson(response);
       _currentUserId = _user!.id;
       await StorageService.saveUser(_user!);
+      
+      // Nettoyer toutes les données des autres providers
+      await _clearOtherProvidersData();
+      
       notifyListeners();
       return;
     }
@@ -135,6 +139,9 @@ class AuthProvider with ChangeNotifier {
     print('DEBUG: User logged in with ID: ${_user!.id}'); // Debug log
     await StorageService.saveUser(_user!);
 
+    // Nettoyer toutes les données des autres providers
+    await _clearOtherProvidersData();
+
     await _connectWebSocket();
     notifyListeners();
   }
@@ -144,6 +151,9 @@ class AuthProvider with ChangeNotifier {
     _clearError();
 
     try {
+      // Nettoyer toutes les données AVANT de sélectionner le nouveau bâtiment
+      await _clearOtherProvidersData();
+      
       final response = await _apiService.selectBuilding(buildingId);
       await _handleLoginSuccess(response);
       return true;
@@ -181,8 +191,9 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> _clearOtherProvidersData() async {
-    // Cette méthode sera appelée depuis le contexte approprié
-    // pour nettoyer les données des autres providers
+    // Cette méthode doit être appelée depuis le contexte approprié
+    // Elle sera implémentée dans les écrans qui ont accès aux providers
+    print('DEBUG: _clearOtherProvidersData called - should be implemented in UI context');
   }
 
   void _setLoading(bool loading) {

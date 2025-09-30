@@ -166,5 +166,15 @@ class WebSocketService {
       _stompClient = null;
     }
     _isConnected = false;
+    print('DEBUG: WebSocket disconnected and all subscriptions cleared');
+  }
+
+  void clearAllSubscriptions() {
+    // Nettoyer toutes les souscriptions sans déconnecter
+    for (final unsubscribe in _subscriptions.values) {
+      unsubscribe();
+    }
+    _subscriptions.clear();
+    print('DEBUG: All WebSocket subscriptions cleared');
   }
 }

@@ -60,15 +60,15 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
 
     print('DEBUG: Switching from building $_currentBuildingId to ${building.buildingId}');
 
+    // Nettoyer TOUTES les données AVANT de changer de bâtiment
+    _clearAllProviderData();
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     final success = await authProvider.selectBuilding(building.buildingId);
 
     if (success && mounted) {
       print('DEBUG: Building switch successful, clearing all data');
-
-      // Nettoyer TOUTES les données des providers
-      _clearAllProviderData();
 
       print('DEBUG: All data cleared, navigating to main screen');
 
@@ -87,10 +87,12 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
       final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
       final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+      final voteProvider = Provider.of<VoteProvider>(context, listen: false);
 
       chatProvider.clearAllData();
       channelProvider.clearAllData();
       notificationProvider.clearAllNotifications();
+      voteProvider.clearAllData();
 
       print('DEBUG: All provider data cleared for building switch');
     } catch (e) {

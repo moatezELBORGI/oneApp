@@ -102,11 +102,13 @@ class ApiService {
 
   // Channel endpoints
   Future<Map<String, dynamic>> getChannels({int page = 0, int size = 20}) async {
+    print('DEBUG: API - Getting channels for current building context');
     final response = await http.get(
       Uri.parse('$baseUrl/channels?page=$page&size=$size'),
       headers: await _getHeaders(),
     );
 
+    print('DEBUG: API - Channels response status: ${response.statusCode}');
     return _handleResponse(response);
   }
 

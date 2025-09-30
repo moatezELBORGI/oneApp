@@ -33,8 +33,8 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
     print('DEBUG: Loading residents for current building: $currentBuildingId');
 
     if (currentBuildingId != null) {
-      // Nettoyer complètement les données précédentes
-      channelProvider.clearAllData();
+      // Nettoyer seulement les résidents pour éviter de perdre les canaux
+      channelProvider.clearBuildingResidents();
 
       await channelProvider.loadBuildingResidents(currentBuildingId);
 

@@ -20,6 +20,41 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _clearAndLoadData();
+    });
+  }
+
+  void _clearAndLoadData() {
+    print('DEBUG: HomeScreen - Clearing and loading data for current building');
+    
+    // Nettoyer les données existantes
+    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+
+    chatProvider.clearAllData();
+    channelProvider.clearAllData();
+    notificationProvider.clearAllNotifications();
+
+    // Charger les nouvelles données
+    _loadData();
+  }
+
+  void _loadData() {
+    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+    channelProvider.loadChannels();
+  }
+
+  void _loadDataOld() {
+    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+    channelProvider.loadChannels();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recharger les données si l'utilisateur change de bâtiment
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
   }

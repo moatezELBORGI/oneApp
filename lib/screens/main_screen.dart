@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/channel_provider.dart';
+import '../providers/chat_provider.dart';
+import '../providers/vote_provider.dart';
 import '../utils/app_theme.dart';
 import 'home/home_screen.dart';
 import 'channels/channels_screen.dart';
@@ -25,6 +29,31 @@ class _MainScreenState extends State<MainScreen> {
     const FilesScreen(),
     const SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // S'assurer que les données sont fraîches pour le bâtiment actuel
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshDataForCurrentBuilding();
+    });
+  }
+
+  void _refreshDataForCurrentBuilding() {
+    print('DEBUG: Refreshing data for current building in MainScreen');
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+
+    // Nettoyer toutes les données existantes
+    chatProvider.clearAllData();
+    channelProvider.clearAllData();
+    notificationProvider.clearAllNotifications();
+
+    print('DEBUG: All provider data cleared for current building');
+  }
 
   @override
   Widget build(BuildContext context) {

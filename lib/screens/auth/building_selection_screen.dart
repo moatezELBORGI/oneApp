@@ -55,12 +55,12 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
   void _selectBuilding(BuildingSelection building) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
+    // Nettoyer TOUTES les données avant de changer de bâtiment
+    _clearAllProviderData();
+
     final success = await authProvider.selectBuilding(building.buildingId);
 
     if (success && mounted) {
-      // Nettoyer TOUTES les données des providers avant de naviguer
-      _clearAllProviderData();
-
       Navigator.of(context).pushReplacementNamed('/main');
     }
   }
@@ -71,11 +71,12 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
       final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
       final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
       final voteProvider = Provider.of<VoteProvider>(context, listen: false);
+      final voteProvider = Provider.of<VoteProvider>(context, listen: false);
 
       chatProvider.clearAllData();
       channelProvider.clearAllData();
       notificationProvider.clearAllNotifications();
-      // Note: VoteProvider n'a pas de méthode clearAllData, on pourrait l'ajouter si nécessaire
+      voteProvider.clearAllData();
 
       print('DEBUG: All provider data cleared for building switch');
     } catch (e) {
