@@ -27,15 +27,15 @@ class AuthProvider with ChangeNotifier {
   void _loadUserFromStorage() async {
     _user = StorageService.getUser();
     _currentUserId = _user?.id;
-    
+
     // Charger le contexte de bâtiment sauvegardé
     await BuildingContextService().loadBuildingContext();
-    
+
     // Mettre à jour le contexte avec le bâtiment de l'utilisateur
     if (_user?.buildingId != null) {
       BuildingContextService().setBuildingContext(_user!.buildingId!);
     }
-    
+
     if (_user != null) {
       _connectWebSocket();
     }
@@ -126,10 +126,10 @@ class AuthProvider with ChangeNotifier {
       _user = User.fromJson(response);
       _currentUserId = _user!.id;
       await StorageService.saveUser(_user!);
-      
+
       // Nettoyer le contexte de bâtiment car l'utilisateur doit choisir
       BuildingContextService().clearBuildingContext();
-      
+
       notifyListeners();
       return;
     }
@@ -165,11 +165,11 @@ class AuthProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.selectBuilding(buildingId);
-      
+
       // Mettre à jour immédiatement le contexte de bâtiment
       BuildingContextService().setBuildingContext(buildingId);
       print('DEBUG: Building context updated to: $buildingId before handling response');
-      
+
       await _handleLoginSuccess(response);
       return true;
     } catch (e) {

@@ -48,7 +48,7 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
     if (currentBuildingId != null) {
       // Mettre à jour le contexte du bâtiment
       BuildingContextService().setBuildingContext(currentBuildingId);
-      
+
       // Nettoyer seulement les résidents pour éviter de perdre les canaux
       channelProvider.clearBuildingResidents();
       channelProvider.loadBuildingResidents(currentBuildingId);

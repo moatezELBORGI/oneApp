@@ -29,14 +29,14 @@ class ChannelProvider with ChangeNotifier {
       _channels.clear();
       _currentBuildingContext = currentBuildingId;
     }
-    
+
     // Ne pas charger si pas de contexte de bâtiment
     if (currentBuildingId == null) {
       print('DEBUG: No building context, skipping channels load');
       _setLoading(false);
       return;
     }
-    
+
     _setLoading(true);
     _clearError();
 
@@ -51,13 +51,13 @@ class ChannelProvider with ChangeNotifier {
       _channels = _channels.where((channel) {
         // Garder les canaux sans bâtiment spécifique (PUBLIC, etc.)
         if (channel.buildingId == null) return true;
-        
+
         // Garder seulement les canaux du bâtiment actuel
         return channel.buildingId == currentBuildingId;
       }).toList();
 
       print('DEBUG: Loaded ${_channels.length} channels for building: $currentBuildingId');
-      
+
       // Sort channels by last activity
       _channels.sort((a, b) {
         final aTime = a.lastMessage?.createdAt ?? a.createdAt;
@@ -123,7 +123,7 @@ class ChannelProvider with ChangeNotifier {
       print('DEBUG: Requested building $buildingId does not match current context $currentBuildingId');
       return;
     }
-    
+
     // Si pas de contexte de bâtiment, ne pas charger
     if (currentBuildingId == null && buildingId == "current") {
       print('DEBUG: No building context, skipping residents load');
@@ -234,12 +234,12 @@ class ChannelProvider with ChangeNotifier {
   }
   void forceRefreshForBuilding(String buildingId) {
     print('DEBUG: Force refreshing channels for building: $buildingId');
-    
+
     // Nettoyer les données existantes
     _channels.clear();
     _buildingResidents.clear();
     _currentBuildingContext = buildingId;
-    
+
     // Recharger immédiatement
     loadChannels(refresh: true);
     loadBuildingResidents(buildingId);

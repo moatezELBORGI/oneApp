@@ -43,15 +43,15 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Vérifier si le bâtiment a changé
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (_lastBuildingId != currentBuildingId) {
       print('DEBUG: Building changed from $_lastBuildingId to $currentBuildingId');
       _lastBuildingId = currentBuildingId;
-      
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentBuildingId != null) {
           _refreshDataForCurrentBuilding();
@@ -59,17 +59,17 @@ class _MainScreenState extends State<MainScreen> {
       });
     }
   }
-  
+
   void _refreshDataForCurrentBuilding() {
     print('DEBUG: Refreshing data for current building in MainScreen');
-    
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (currentBuildingId != null) {
       // Nettoyer toutes les données existantes
       BuildingContextService.clearAllProvidersData(context);
-      
+
       // Attendre un peu puis charger les nouvelles données
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {

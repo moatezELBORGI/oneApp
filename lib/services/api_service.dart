@@ -104,7 +104,7 @@ class ApiService {
   Future<Map<String, dynamic>> getChannels({int page = 0, int size = 20}) async {
     final token = await StorageService.getToken();
     print('DEBUG: API - Getting channels for current building context with token: ${token?.substring(0, 20)}...');
-    
+
     final response = await http.get(
       Uri.parse('$baseUrl/channels?page=$page&size=$size'),
       headers: await _getHeaders(),
@@ -256,7 +256,7 @@ class ApiService {
     print('DEBUG: Making API call to get building residents for: $buildingId with token: ${token?.substring(0, 20)}...');
 
     // Si buildingId est "current", utiliser l'endpoint spécial
-    final endpoint = buildingId == "current" 
+    final endpoint = buildingId == "current"
         ? '$baseUrl/channels/current-building/residents'
         : '$baseUrl/channels/building/$buildingId/residents';
 

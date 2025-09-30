@@ -69,7 +69,7 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
 
     // Nettoyer toutes les données avant de changer de bâtiment
     BuildingContextService.clearAllProvidersData(context);
-    
+
     // Forcer la mise à jour du contexte
     BuildingContextService().setBuildingContext(building.buildingId);
     final success = await authProvider.selectBuilding(building.buildingId);
@@ -79,7 +79,7 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
     if (success && mounted) {
       // Forcer le rechargement des données pour le nouveau bâtiment
       BuildingContextService.forceRefreshForBuilding(context, building.buildingId);
-      
+
       Navigator.of(context).pushReplacementNamed('/main');
     }
   }

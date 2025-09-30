@@ -94,7 +94,7 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
     );
     // Nettoyer toutes les données avant de changer de bâtiment
     BuildingContextService.clearAllProvidersData(context);
-    
+
     // Forcer la mise à jour du contexte
     BuildingContextService().setBuildingContext(building.buildingId);
 
@@ -106,10 +106,10 @@ class _BuildingSwitchScreenState extends State<BuildingSwitchScreen> {
     if (success && mounted) {
       // Forcer le rechargement des données pour le nouveau bâtiment
       BuildingContextService.forceRefreshForBuilding(context, building.buildingId);
-      
+
       // Retourner à l'écran principal et recharger les données
       Navigator.of(context).pop();
-      
+
       // Afficher un message de succès
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

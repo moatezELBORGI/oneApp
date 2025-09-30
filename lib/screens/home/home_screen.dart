@@ -31,15 +31,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Vérifier si le bâtiment a changé
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (_lastBuildingId != currentBuildingId) {
       print('DEBUG: HomeScreen - Building changed from $_lastBuildingId to $currentBuildingId');
       _lastBuildingId = currentBuildingId;
-      
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentBuildingId != null) {
           _initializeForCurrentBuilding();
@@ -47,18 +47,18 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
-  
+
 
   void _initializeForCurrentBuilding() {
     print('DEBUG: HomeScreen - Initializing for current building');
-    
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (currentBuildingId != null) {
       // Nettoyer et charger les données pour le bâtiment actuel
       BuildingContextService.clearAllProvidersData(context);
-      
+
       // Attendre un peu puis charger
       Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted) {
@@ -71,12 +71,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _loadData() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (currentBuildingId == null) {
       print('DEBUG: No building context, skipping data load');
       return;
     }
-    
+
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
     channelProvider.loadChannels(refresh: true);
   }
@@ -99,19 +99,19 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 // Header
                 _buildHeader(),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Notifications Summary
                 _buildNotificationsSummary(),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Quick Access
                 _buildQuickAccess(),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Recent Activity
                 _buildRecentActivity(),
               ],
@@ -133,30 +133,30 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: AppTheme.primaryColor,
               child: user?.picture != null
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(25),
-                      child: Image.network(
-                        user!.picture!,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Text(
-                            user.initials,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                  : Text(
-                      user?.initials ?? 'U',
+                borderRadius: BorderRadius.circular(25),
+                child: Image.network(
+                  user!.picture!,
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Text(
+                      user.initials,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
-                    ),
+                    );
+                  },
+                ),
+              )
+                  : Text(
+                user?.initials ?? 'U',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -174,13 +174,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     children: [
                       if (user?.apartmentId != null)
-                    Text(
-                      'Appartement ${user!.apartmentId}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
+                        Text(
+                          'Appartement ${user!.apartmentId}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
                       const SizedBox(width: 8),
                       const BuildingContextIndicator(),
                     ],
@@ -269,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Consumer<ChannelProvider>(
           builder: (context, channelProvider, child) {
             final recentChannels = channelProvider.channels.take(2).toList();
-            
+
             return GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -280,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 QuickAccessCard(
                   title: 'Dernier Chat',
-                  subtitle: recentChannels.isNotEmpty 
+                  subtitle: recentChannels.isNotEmpty
                       ? recentChannels.first.name
                       : 'Aucun chat récent',
                   icon: Icons.chat,
@@ -299,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 QuickAccessCard(
                   title: 'Dernier Canal',
-                  subtitle: recentChannels.length > 1 
+                  subtitle: recentChannels.length > 1
                       ? recentChannels[1].name
                       : 'Aucun canal récent',
                   icon: Icons.forum,
@@ -346,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
 
             final recentChannels = channelProvider.channels.take(5).toList();
-            
+
             if (recentChannels.isEmpty) {
               return Card(
                 child: Padding(
@@ -384,8 +384,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     leading: CircleAvatar(
                       backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
                       child: Icon(
-                        channel.type == 'ONE_TO_ONE' 
-                            ? Icons.person 
+                        channel.type == 'ONE_TO_ONE'
+                            ? Icons.person
                             : Icons.group,
                         color: AppTheme.primaryColor,
                       ),
@@ -403,12 +403,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     trailing: channel.lastMessage != null
                         ? Text(
-                            _formatTime(channel.lastMessage!.createdAt),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
-                            ),
-                          )
+                      _formatTime(channel.lastMessage!.createdAt),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    )
                         : null,
                     onTap: () {
                       Navigator.of(context).push(

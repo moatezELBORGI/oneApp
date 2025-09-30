@@ -148,6 +148,9 @@ public class VoteService {
         return convertToDto(vote, userId);
     }
 
+
+
+
     // Fermer automatiquement les votes expirés
     @Scheduled(fixedRate = 60000) // Toutes les minutes
     @Transactional

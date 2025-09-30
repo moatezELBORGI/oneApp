@@ -40,7 +40,7 @@ class ChatProvider with ChangeNotifier {
       notifyListeners();
       return [];
     }
-    
+
     return _channelMessages[channelId] ?? [];
   }
 
@@ -67,13 +67,13 @@ class ChatProvider with ChangeNotifier {
       _typingUsers.clear();
       _currentBuildingContext = currentBuildingId;
     }
-    
+
     // Ne pas charger si pas de contexte de bâtiment
     if (currentBuildingId == null) {
       print('DEBUG: No building context, skipping messages load');
       return;
     }
-    
+
     _isLoadingMessages[channelId] = true;
     notifyListeners();
 
@@ -286,7 +286,7 @@ class ChatProvider with ChangeNotifier {
     for (final channelId in channelIds) {
       _wsService.unsubscribeFromChannel(channelId);
     }
-    
+
     // Nettoyer toutes les souscriptions WebSocket
     _wsService.clearAllSubscriptions();
 
@@ -295,18 +295,18 @@ class ChatProvider with ChangeNotifier {
 
   void forceRefreshForBuilding(String buildingId) {
     print('DEBUG: Force refreshing chat data for building: $buildingId');
-    
+
     // Nettoyer toutes les données
     final channelIds = List<int>.from(_channelMessages.keys);
     for (final channelId in channelIds) {
       _wsService.unsubscribeFromChannel(channelId);
     }
-    
+
     _channelMessages.clear();
     _isLoadingMessages.clear();
     _typingUsers.clear();
     _currentBuildingContext = buildingId;
-    
+
     notifyListeners();
   }
   void clearMessagesForBuilding() {

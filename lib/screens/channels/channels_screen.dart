@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/building_context_service.dart';
 import '../../utils/app_theme.dart';
 import '../../models/channel_model.dart';
+import '../../widgets/building_context_indicator.dart';
 import '../chat/chat_screen.dart';
 import 'create_channel_screen.dart';
 
@@ -31,15 +32,15 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Vérifier si le bâtiment a changé
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (_lastBuildingId != currentBuildingId) {
       print('DEBUG: ChannelsScreen - Building changed from $_lastBuildingId to $currentBuildingId');
       _lastBuildingId = currentBuildingId;
-      
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentBuildingId != null) {
           _initializeForCurrentBuilding();
@@ -50,10 +51,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
 
   void _initializeForCurrentBuilding() {
     print('DEBUG: ChannelsScreen - Initializing for current building');
-    
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (currentBuildingId != null) {
       BuildingContextService.forceRefreshForBuilding(context, currentBuildingId);
     }
@@ -62,12 +63,12 @@ class _ChannelsScreenState extends State<ChannelsScreen> with SingleTickerProvid
   void _loadChannels() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (currentBuildingId == null) {
       print('DEBUG: No building context, skipping channels load');
       return;
     }
-    
+
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
     channelProvider.loadChannels(refresh: true);
   }

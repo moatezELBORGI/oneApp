@@ -26,7 +26,7 @@ class VoteProvider with ChangeNotifier {
       notifyListeners();
       return [];
     }
-    
+
     return _channelVotes[channelId] ?? [];
   }
 
@@ -36,7 +36,7 @@ class VoteProvider with ChangeNotifier {
     if (_currentBuildingContext != currentBuildingId) {
       return null;
     }
-    
+
     return _votes[voteId];
   }
 

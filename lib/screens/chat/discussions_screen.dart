@@ -30,15 +30,15 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Vérifier si le bâtiment a changé
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (_lastBuildingId != currentBuildingId) {
       print('DEBUG: DiscussionsScreen - Building changed from $_lastBuildingId to $currentBuildingId');
       _lastBuildingId = currentBuildingId;
-      
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentBuildingId != null) {
           _initializeForCurrentBuilding();
@@ -49,10 +49,10 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
 
   void _initializeForCurrentBuilding() {
     print('DEBUG: DiscussionsScreen - Initializing for current building');
-    
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (currentBuildingId != null) {
       BuildingContextService.forceRefreshForBuilding(context, currentBuildingId);
     }
@@ -61,12 +61,12 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
   void _loadDiscussions() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
-    
+
     if (currentBuildingId == null) {
       print('DEBUG: No building context, skipping discussions load');
       return;
     }
-    
+
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
     channelProvider.loadChannels(refresh: true);
   }

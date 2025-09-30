@@ -36,7 +36,7 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
     if (currentBuildingId != null) {
       // Mettre à jour le contexte du bâtiment
       BuildingContextService().setBuildingContext(currentBuildingId);
-      
+
       // Nettoyer seulement les résidents pour éviter de perdre les canaux
       channelProvider.clearBuildingResidents();
 
@@ -57,8 +57,6 @@ class _NewDiscussionScreenState extends State<NewDiscussionScreen> {
       setState(() {
         _filteredResidents = [];
       });
-    } else {
-      print('DEBUG: No current building ID found for user');
     }
   }
 
