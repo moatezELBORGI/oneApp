@@ -273,17 +273,30 @@ public class DataInitializationService implements CommandLineRunner {
 
             residentBuildingRepository.save(residentBuilding1Resident);
 
-            log.info("Test data created:");
-            log.info("- Building: {} (ID: {})", testBuilding.getBuildingLabel(), testBuilding.getBuildingId());
-            log.info("- Building 2: {} (ID: {})", testBuilding2.getBuildingLabel(), testBuilding2.getBuildingId());
-            log.info("- Building 3: {} (ID: {})", testBuilding3.getBuildingLabel(), testBuilding3.getBuildingId());
-            log.info("- Resident 1: {} {} - Email: {} - Apartment: {}",
-                    resident1.getFname(), resident1.getLname(), resident1.getEmail(), apartment1.getApartmentNumber());
-            log.info("- Resident 2: {} {} - Email: {} - Apartment: {}",
-                    resident2.getFname(), resident2.getLname(), resident2.getEmail(), apartment2.getApartmentNumber());
-            log.info("- Resident 1 is also admin of building 2");
-            log.info("- Resident 1 is also resident of building 3 (apartment 201)");
-            log.info("Password for both test residents: password123");
+            // ==================== RÉSUMÉ ====================
+            log.info("\n" +
+                    "========================================\n" +
+                    "Test data created successfully!\n" +
+                    "========================================\n" +
+                    "BUILDINGS:\n" +
+                    "  1. {} (ID: {}) - 6 apartments\n" +
+                    "  2. {} (ID: {}) - 6 apartments\n" +
+                    "\n" +
+                    "RESIDENTS:\n" +
+                    "  1. {} ({})\n" +
+                    "     - ADMIN in Building 1 (Apartment 301)\n" +
+                    "     - ADMIN in Building 2 (Apartment 302)\n" +
+                    "\n" +
+                    "  2. {} ({})\n" +
+                    "     - RESIDENT in Building 1 (Apartment 101)\n" +
+                    "\n" +
+                    "PASSWORD: password123\n" +
+                    "========================================",
+                    building1.getBuildingLabel(), building1.getBuildingId(),
+                    building2.getBuildingLabel(), building2.getBuildingId(),
+                    admin.getEmail(), admin.getFname() + " " + admin.getLname(),
+                    resident.getEmail(), resident.getFname() + " " + resident.getLname()
+            );
         }
     }
 }
