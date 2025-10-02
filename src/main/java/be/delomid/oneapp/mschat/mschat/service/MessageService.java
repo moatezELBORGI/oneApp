@@ -208,6 +208,22 @@ public class MessageService {
         }
     }
 
+    private void validateReadAccess(Long channelId, String userId) {
+        Optional<Resident> residentOpt = residentRepository.findByEmail(userId);
+
+        Optional<ChannelMember> memberByResidentId = residentOpt
+                .flatMap(resident -> channelMemberRepository.findByChannelIdAndUserId(channelId, resident.getIdUsers()));
+
+        Optional<ChannelMember> memberByUserId = channelMemberRepository.findByChannelIdAndUserId(channelId, userId);
+
+        ChannelMember member = memberByResidentId.or(() -> memberByUserId)
+                .orElseThrow(() -> new UnauthorizedAccessException("User is not a member of this channel"));
+
+        if (!member.getIsActive()) {
+            throw new UnauthorizedAccessException("User does not have access to this channel");
+        }
+    }
+
     private void validateWriteAccess(Long channelId, String userId) {
         log.info("userid mn message service1: {}", userId);
 
@@ -306,8 +322,8 @@ public class MessageService {
     }
 
     private SharedMediaDto mapToSharedMediaDto(FileAttachment attachment) {
-        String uploaderName = residentRepository.findByIdUsers(attachment.getUploadedBy())
-                .map(r -> r.getFirstName() + " " + r.getLastName())
+        String uploaderName = residentRepository.findById(attachment.getUploadedBy())
+                .map(r -> r.getFname() + " " + r.getLname())
                 .orElse("Unknown");
 
         String messageContent = null;
