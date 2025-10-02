@@ -8,6 +8,7 @@ import '../../widgets/building_context_indicator.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/notification_card.dart';
 import '../../widgets/quick_access_card.dart';
+import '../../widgets/building_selector_dropdown.dart';
 import '../chat/chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -188,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
+            const BuildingSelectorDropdown(),
             IconButton(
               onPressed: () {
                 // TODO: Show notifications
