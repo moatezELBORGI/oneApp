@@ -12,17 +12,21 @@ import java.util.Optional;
 @Repository
 public interface FolderRepository extends JpaRepository<Folder, Long> {
 
-    List<Folder> findByApartmentIdAndParentFolderIsNull(Long apartmentId);
+    @Query("SELECT f FROM Folder f WHERE f.apartment.idApartment = :apartmentId AND f.parentFolder IS NULL")
+    List<Folder> findByApartmentIdAndParentFolderIsNull(@Param("apartmentId") String apartmentId);
 
     List<Folder> findByParentFolderId(Long parentFolderId);
 
-    @Query("SELECT f FROM Folder f WHERE f.apartment.id = :apartmentId AND f.parentFolder.id = :parentId")
-    List<Folder> findByApartmentIdAndParentFolderId(@Param("apartmentId") Long apartmentId,
+    @Query("SELECT f FROM Folder f WHERE f.apartment.idApartment = :apartmentId AND f.parentFolder.id = :parentId")
+    List<Folder> findByApartmentIdAndParentFolderId(@Param("apartmentId") String apartmentId,
                                                      @Param("parentId") Long parentId);
 
-    Optional<Folder> findByIdAndApartmentId(Long id, Long apartmentId);
+    @Query("SELECT f FROM Folder f WHERE f.id = :id AND f.apartment.idApartment = :apartmentId")
+    Optional<Folder> findByIdAndApartmentId(@Param("id") Long id, @Param("apartmentId") String apartmentId);
 
-    boolean existsByNameAndParentFolderIdAndApartmentId(String name, Long parentFolderId, Long apartmentId);
+    @Query("SELECT CASE WHEN COUNT(f) > 0 THEN true ELSE false END FROM Folder f WHERE f.name = :name AND f.parentFolder.id = :parentFolderId AND f.apartment.idApartment = :apartmentId")
+    boolean existsByNameAndParentFolderIdAndApartmentId(@Param("name") String name, @Param("parentFolderId") Long parentFolderId, @Param("apartmentId") String apartmentId);
 
-    boolean existsByNameAndParentFolderIsNullAndApartmentId(String name, Long apartmentId);
+    @Query("SELECT CASE WHEN COUNT(f) > 0 THEN true ELSE false END FROM Folder f WHERE f.name = :name AND f.parentFolder IS NULL AND f.apartment.idApartment = :apartmentId")
+    boolean existsByNameAndParentFolderIsNullAndApartmentId(@Param("name") String name, @Param("apartmentId") String apartmentId);
 }

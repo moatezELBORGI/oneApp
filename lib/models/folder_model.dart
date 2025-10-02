@@ -3,7 +3,7 @@ class FolderModel {
   final String name;
   final String folderPath;
   final int? parentFolderId;
-  final int apartmentId;
+  final String apartmentId;
   final String createdBy;
   final DateTime createdAt;
   final int subFolderCount;

@@ -60,21 +60,21 @@ public class DocumentService {
 
         if (request.getParentFolderId() != null) {
             Folder parentFolder = folderRepository.findByIdAndApartmentId(
-                    request.getParentFolderId(), apartment.getId())
+                    request.getParentFolderId(), apartment.getIdApartment())
                     .orElseThrow(() -> new RuntimeException("Dossier parent non trouvé"));
 
             if (folderRepository.existsByNameAndParentFolderIdAndApartmentId(
-                    cleanName, request.getParentFolderId(), apartment.getId())) {
+                    cleanName, request.getParentFolderId(), apartment.getIdApartment())) {
                 throw new RuntimeException("Un dossier avec ce nom existe déjà à cet emplacement");
             }
         } else {
             if (folderRepository.existsByNameAndParentFolderIsNullAndApartmentId(
-                    cleanName, apartment.getId())) {
+                    cleanName, apartment.getIdApartment())) {
                 throw new RuntimeException("Un dossier avec ce nom existe déjà à la racine");
             }
         }
 
-        String folderPath = buildFolderPath(apartment.getId(), request.getParentFolderId(), cleanName);
+        String folderPath = buildFolderPath(apartment.getIdApartment(), request.getParentFolderId(), cleanName);
 
         try {
             Path physicalPath = Paths.get(baseDocumentsDir, folderPath);
@@ -100,7 +100,7 @@ public class DocumentService {
                 .build();
 
         folder = folderRepository.save(folder);
-        log.info("Dossier créé en base de données: {} (ID: {}) pour appartement: {}", folder.getName(), folder.getId(), apartment.getId());
+        log.info("Dossier créé en base de données: {} (ID: {}) pour appartement: {}", folder.getName(), folder.getId(), apartment.getIdApartment());
 
         return mapToFolderDto(folder);
     }
@@ -117,8 +117,8 @@ public class DocumentService {
 
         ensureApartmentRootFolderExists(apartment);
 
-        List<Folder> folders = folderRepository.findByApartmentIdAndParentFolderIsNull(apartment.getId());
-        log.debug("Récupération de {} dossiers racine pour l'appartement {}", folders.size(), apartment.getId());
+        List<Folder> folders = folderRepository.findByApartmentIdAndParentFolderIsNull(apartment.getIdApartment());
+        log.debug("Récupération de {} dossiers racine pour l'appartement {}", folders.size(), apartment.getIdApartment());
 
         return folders.stream()
                 .map(this::mapToFolderDto)
@@ -127,15 +127,15 @@ public class DocumentService {
 
     private void ensureApartmentRootFolderExists(Apartment apartment) {
         try {
-            String apartmentFolderPath = "apartment_" + apartment.getId();
+            String apartmentFolderPath = "apartment_" + apartment.getIdApartment();
             Path physicalPath = Paths.get(baseDocumentsDir, apartmentFolderPath);
 
             if (!Files.exists(physicalPath)) {
                 Files.createDirectories(physicalPath);
-                log.info("Dossier racine créé pour l'appartement {}: {}", apartment.getId(), physicalPath.toAbsolutePath());
+                log.info("Dossier racine créé pour l'appartement {}: {}", apartment.getIdApartment(), physicalPath.toAbsolutePath());
             }
         } catch (IOException e) {
-            log.error("Erreur lors de la création du dossier racine de l'appartement {}", apartment.getId(), e);
+            log.error("Erreur lors de la création du dossier racine de l'appartement {}", apartment.getIdApartment(), e);
         }
     }
 
@@ -149,7 +149,7 @@ public class DocumentService {
             throw new RuntimeException("Aucun appartement associé au résident");
         }
 
-        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getId())
+        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getIdApartment())
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         log.debug("Récupération de {} sous-dossiers pour le dossier {} (ID: {})",
@@ -170,7 +170,7 @@ public class DocumentService {
             throw new RuntimeException("Aucun appartement associé au résident");
         }
 
-        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getId())
+        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getIdApartment())
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         List<Document> documents = documentRepository.findByFolderIdOrderByCreatedAtDesc(folderId);
@@ -192,7 +192,7 @@ public class DocumentService {
             throw new RuntimeException("Aucun appartement associé au résident");
         }
 
-        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getId())
+        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getIdApartment())
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         if (file == null || file.isEmpty()) {
@@ -236,7 +236,7 @@ public class DocumentService {
 
             document = documentRepository.save(document);
             log.info("Document uploadé: {} (ID: {}) dans le dossier: {} pour appartement: {}",
-                    originalFilename, document.getId(), folder.getName(), apartment.getId());
+                    originalFilename, document.getId(), folder.getName(), apartment.getIdApartment());
 
             return mapToDocumentDto(document);
 
@@ -256,7 +256,7 @@ public class DocumentService {
             throw new RuntimeException("Aucun appartement associé au résident");
         }
 
-        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getId())
+        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getIdApartment())
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         try {
@@ -267,7 +267,7 @@ public class DocumentService {
             }
 
             folderRepository.delete(folder);
-            log.info("Dossier supprimé: {} (ID: {}) pour appartement: {}", folder.getName(), folderId, apartment.getId());
+            log.info("Dossier supprimé: {} (ID: {}) pour appartement: {}", folder.getName(), folderId, apartment.getIdApartment());
 
         } catch (IOException e) {
             log.error("Erreur lors de la suppression du dossier: {}", e.getMessage(), e);
@@ -285,7 +285,7 @@ public class DocumentService {
             throw new RuntimeException("Aucun appartement associé au résident");
         }
 
-        Document document = documentRepository.findByIdAndApartmentId(documentId, apartment.getId())
+        Document document = documentRepository.findByIdAndApartmentId(documentId, apartment.getIdApartment())
                 .orElseThrow(() -> new RuntimeException("Document non trouvé ou accès non autorisé"));
 
         try {
@@ -296,7 +296,7 @@ public class DocumentService {
             }
 
             documentRepository.delete(document);
-            log.info("Document supprimé: {} (ID: {}) pour appartement: {}", document.getOriginalFilename(), documentId, apartment.getId());
+            log.info("Document supprimé: {} (ID: {}) pour appartement: {}", document.getOriginalFilename(), documentId, apartment.getIdApartment());
 
         } catch (IOException e) {
             log.error("Erreur lors de la suppression du document: {}", e.getMessage(), e);
@@ -313,7 +313,7 @@ public class DocumentService {
             throw new RuntimeException("Aucun appartement associé au résident");
         }
 
-        Document document = documentRepository.findByIdAndApartmentId(documentId, apartment.getId())
+        Document document = documentRepository.findByIdAndApartmentId(documentId, apartment.getIdApartment())
                 .orElseThrow(() -> new RuntimeException("Document non trouvé ou accès non autorisé"));
 
         Path filePath = Paths.get(baseDocumentsDir, document.getFilePath());
@@ -323,7 +323,7 @@ public class DocumentService {
         }
 
         log.info("Téléchargement du document: {} (ID: {}) pour appartement: {}",
-                document.getOriginalFilename(), documentId, apartment.getId());
+                document.getOriginalFilename(), documentId, apartment.getIdApartment());
         return Files.readAllBytes(filePath);
     }
 
@@ -341,16 +341,16 @@ public class DocumentService {
             return List.of();
         }
 
-        List<Document> documents = documentRepository.searchDocuments(apartment.getId(), query.trim());
+        List<Document> documents = documentRepository.searchDocuments(apartment.getIdApartment(), query.trim());
         log.debug("Recherche '{}' a retourné {} documents pour appartement {}",
-                query, documents.size(), apartment.getId());
+                query, documents.size(), apartment.getIdApartment());
 
         return documents.stream()
                 .map(this::mapToDocumentDto)
                 .collect(Collectors.toList());
     }
 
-    private String buildFolderPath(Long apartmentId, Long parentFolderId, String folderName) {
+    private String buildFolderPath(String apartmentId, Long parentFolderId, String folderName) {
         if (parentFolderId != null) {
             Folder parentFolder = folderRepository.findById(parentFolderId)
                     .orElseThrow(() -> new RuntimeException("Parent folder not found"));
@@ -387,7 +387,7 @@ public class DocumentService {
                 .name(folder.getName())
                 .folderPath(folder.getFolderPath())
                 .parentFolderId(folder.getParentFolder() != null ? folder.getParentFolder().getId() : null)
-                .apartmentId(folder.getApartment().getId())
+                .apartmentId(folder.getApartment().getIdApartment())
                 .createdBy(folder.getCreatedBy())
                 .createdAt(folder.getCreatedAt())
                 .subFolderCount(folder.getSubFolders() != null ? folder.getSubFolders().size() : 0)
@@ -406,7 +406,7 @@ public class DocumentService {
                 .mimeType(document.getMimeType())
                 .fileExtension(document.getFileExtension())
                 .folderId(document.getFolder().getId())
-                .apartmentId(document.getApartment().getId())
+                .apartmentId(document.getApartment().getIdApartment())
                 .uploadedBy(document.getUploadedBy())
                 .description(document.getDescription())
                 .createdAt(document.getCreatedAt())

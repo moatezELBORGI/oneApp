@@ -17,7 +17,7 @@ public class FolderDto {
     private String name;
     private String folderPath;
     private Long parentFolderId;
-    private Long apartmentId;
+    private String apartmentId;
     private String createdBy;
     private LocalDateTime createdAt;
     private Integer subFolderCount;

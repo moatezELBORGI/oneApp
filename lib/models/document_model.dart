@@ -7,7 +7,7 @@ class DocumentModel {
   final String? mimeType;
   final String? fileExtension;
   final int folderId;
-  final int apartmentId;
+  final String apartmentId;
   final String uploadedBy;
   final String? description;
   final DateTime createdAt;

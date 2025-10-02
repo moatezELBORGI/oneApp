@@ -20,7 +20,7 @@ public class DocumentDto {
     private String mimeType;
     private String fileExtension;
     private Long folderId;
-    private Long apartmentId;
+    private String apartmentId;
     private String uploadedBy;
     private String description;
     private LocalDateTime createdAt;
