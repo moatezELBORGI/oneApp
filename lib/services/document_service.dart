@@ -8,10 +8,8 @@ import '../utils/constants.dart';
 import 'storage_service.dart';
 
 class DocumentService {
-  final StorageService _storageService = StorageService();
-
   Future<String?> _getToken() async {
-    return await _storageService.getToken();
+    return await StorageService.getToken();
   }
 
   Future<Map<String, String>> _getHeaders() async {
@@ -204,20 +202,38 @@ class DocumentService {
   }
 
   String getFileIcon(String? mimeType, String? extension) {
-    if (mimeType == null && extension == null) return 'file';
+    if (mimeType == null && extension == null) {
+      return 'file';
+    }
 
-    if (mimeType?.startsWith('image/') ?? false) return 'image';
-    if (mimeType == 'application/pdf') return 'pdf';
-    if (mimeType?.contains('word') ?? false) return 'doc';
+    if (mimeType?.startsWith('image/') ?? false) {
+      return 'image';
+    }
+    if (mimeType == 'application/pdf') {
+      return 'pdf';
+    }
+    if (mimeType?.contains('word') ?? false) {
+      return 'doc';
+    }
     if (mimeType?.contains('excel') ?? false ||
-        mimeType?.contains('spreadsheet') ?? false) return 'excel';
+        mimeType?.contains('spreadsheet') ?? false) {
+      return 'excel';
+    }
     if (mimeType?.contains('powerpoint') ?? false ||
-        mimeType?.contains('presentation') ?? false) return 'ppt';
-    if (mimeType?.startsWith('video/') ?? false) return 'video';
-    if (mimeType?.startsWith('audio/') ?? false) return 'audio';
+        mimeType?.contains('presentation') ?? false) {
+      return 'ppt';
+    }
+    if (mimeType?.startsWith('video/') ?? false) {
+      return 'video';
+    }
+    if (mimeType?.startsWith('audio/') ?? false) {
+      return 'audio';
+    }
     if (mimeType?.contains('zip') ?? false ||
         mimeType?.contains('rar') ?? false ||
-        mimeType?.contains('compressed') ?? false) return 'archive';
+        mimeType?.contains('compressed') ?? false) {
+      return 'archive';
+    }
 
     return 'file';
   }
