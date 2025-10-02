@@ -27,7 +27,7 @@ public class DocumentController {
 
     private final DocumentService documentService;
 
-    private String getUserId(Authentication authentication) {
+    private String getUserEmail(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new RuntimeException("Authentication requise");
         }
@@ -39,9 +39,9 @@ public class DocumentController {
             @Valid @RequestBody CreateFolderRequest request,
             Authentication authentication) {
         try {
-            String username = getUserId(authentication);
-            log.info("Création d'un dossier: {} par utilisateur: {}", request.getName(), username);
-            FolderDto folder = documentService.createFolder(request, username);
+            String email = getUserEmail(authentication);
+            log.info("Création d'un dossier: {} par utilisateur: {}", request.getName(), email);
+            FolderDto folder = documentService.createFolder(request, email);
             return ResponseEntity.ok(folder);
         } catch (RuntimeException e) {
             log.error("Échec de la création du dossier: {}", e.getMessage());
@@ -52,9 +52,9 @@ public class DocumentController {
     @GetMapping("/folders")
     public ResponseEntity<List<FolderDto>> getRootFolders(Authentication authentication) {
         try {
-            String username = getUserId(authentication);
-            log.debug("Récupération des dossiers racine pour utilisateur: {}", username);
-            List<FolderDto> folders = documentService.getRootFolders(username);
+            String email = getUserEmail(authentication);
+            log.debug("Récupération des dossiers racine pour utilisateur: {}", email);
+            List<FolderDto> folders = documentService.getRootFolders(email);
             return ResponseEntity.ok(folders);
         } catch (RuntimeException e) {
             log.error("Échec de la récupération des dossiers racine: {}", e.getMessage());
@@ -67,9 +67,9 @@ public class DocumentController {
             @PathVariable Long folderId,
             Authentication authentication) {
         try {
-            String username = getUserId(authentication);
-            log.debug("Récupération des sous-dossiers du dossier {} pour utilisateur: {}", folderId, username);
-            List<FolderDto> folders = documentService.getSubFolders(folderId, username);
+            String email = getUserEmail(authentication);
+            log.debug("Récupération des sous-dossiers du dossier {} pour utilisateur: {}", folderId, email);
+            List<FolderDto> folders = documentService.getSubFolders(folderId, email);
             return ResponseEntity.ok(folders);
         } catch (RuntimeException e) {
             log.error("Échec de la récupération des sous-dossiers: {}", e.getMessage());
@@ -82,9 +82,9 @@ public class DocumentController {
             @PathVariable Long folderId,
             Authentication authentication) {
         try {
-            String username = getUserId(authentication);
-            log.debug("Récupération des documents du dossier {} pour utilisateur: {}", folderId, username);
-            List<DocumentDto> documents = documentService.getFolderDocuments(folderId, username);
+            String email = getUserEmail(authentication);
+            log.debug("Récupération des documents du dossier {} pour utilisateur: {}", folderId, email);
+            List<DocumentDto> documents = documentService.getFolderDocuments(folderId, email);
             return ResponseEntity.ok(documents);
         } catch (RuntimeException e) {
             log.error("Échec de la récupération des documents: {}", e.getMessage());
@@ -99,9 +99,9 @@ public class DocumentController {
             @RequestParam(value = "description", required = false) String description,
             Authentication authentication) {
         try {
-            String username = getUserId(authentication);
-            log.info("Upload de fichier dans le dossier {} par utilisateur: {}", folderId, username);
-            DocumentDto document = documentService.uploadDocument(folderId, file, description, username);
+            String email = getUserEmail(authentication);
+            log.info("Upload de fichier dans le dossier {} par utilisateur: {}", folderId, email);
+            DocumentDto document = documentService.uploadDocument(folderId, file, description, email);
             return ResponseEntity.ok(document);
         } catch (IllegalArgumentException e) {
             log.error("Argument invalide lors de l'upload: {}", e.getMessage());
@@ -117,9 +117,9 @@ public class DocumentController {
             @PathVariable Long folderId,
             Authentication authentication) {
         try {
-            String username = getUserId(authentication);
-            log.info("Suppression du dossier {} par utilisateur: {}", folderId, username);
-            documentService.deleteFolder(folderId, username);
+            String email = getUserEmail(authentication);
+            log.info("Suppression du dossier {} par utilisateur: {}", folderId, email);
+            documentService.deleteFolder(folderId, email);
             return ResponseEntity.ok().build();
         } catch (RuntimeException e) {
             log.error("Échec de la suppression du dossier: {}", e.getMessage());
@@ -132,9 +132,9 @@ public class DocumentController {
             @PathVariable Long documentId,
             Authentication authentication) {
         try {
-            String username = getUserId(authentication);
-            log.info("Suppression du document {} par utilisateur: {}", documentId, username);
-            documentService.deleteDocument(documentId, username);
+            String email = getUserEmail(authentication);
+            log.info("Suppression du document {} par utilisateur: {}", documentId, email);
+            documentService.deleteDocument(documentId, email);
             return ResponseEntity.ok().build();
         } catch (RuntimeException e) {
             log.error("Échec de la suppression du document: {}", e.getMessage());
@@ -147,9 +147,9 @@ public class DocumentController {
             @PathVariable Long documentId,
             Authentication authentication) throws IOException {
         try {
-            String username = getUserId(authentication);
-            log.info("Téléchargement du document {} par utilisateur: {}", documentId, username);
-            byte[] fileContent = documentService.downloadDocument(documentId, username);
+            String email = getUserEmail(authentication);
+            log.info("Téléchargement du document {} par utilisateur: {}", documentId, email);
+            byte[] fileContent = documentService.downloadDocument(documentId, email);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment")
@@ -169,9 +169,9 @@ public class DocumentController {
             @PathVariable Long documentId,
             Authentication authentication) throws IOException {
         try {
-            String username = getUserId(authentication);
-            log.info("Aperçu du document {} par utilisateur: {}", documentId, username);
-            byte[] fileContent = documentService.downloadDocument(documentId, username);
+            String email = getUserEmail(authentication);
+            log.info("Aperçu du document {} par utilisateur: {}", documentId, email);
+            byte[] fileContent = documentService.downloadDocument(documentId, email);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
@@ -191,9 +191,9 @@ public class DocumentController {
             @RequestParam String query,
             Authentication authentication) {
         try {
-            String username = getUserId(authentication);
-            log.info("Recherche de documents avec la requête: '{}' par utilisateur: {}", query, username);
-            List<DocumentDto> documents = documentService.searchDocuments(query, username);
+            String email = getUserEmail(authentication);
+            log.info("Recherche de documents avec la requête: '{}' par utilisateur: {}", query, email);
+            List<DocumentDto> documents = documentService.searchDocuments(query, email);
             return ResponseEntity.ok(documents);
         } catch (RuntimeException e) {
             log.error("Échec de la recherche de documents: {}", e.getMessage());

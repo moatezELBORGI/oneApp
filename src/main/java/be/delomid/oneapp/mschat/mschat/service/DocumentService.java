@@ -44,8 +44,8 @@ public class DocumentService {
     private long maxFileSize;
 
     @Transactional
-    public FolderDto createFolder(CreateFolderRequest request, String username) {
-        Resident resident = residentRepository.findByPhoneNumber(username)
+    public FolderDto createFolder(CreateFolderRequest request, String email) {
+        Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
@@ -96,7 +96,7 @@ public class DocumentService {
                 .folderPath(folderPath)
                 .parentFolder(parentFolder)
                 .apartment(apartment)
-                .createdBy(username)
+                .createdBy(resident.getIdUsers())
                 .build();
 
         folder = folderRepository.save(folder);
@@ -106,8 +106,8 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public List<FolderDto> getRootFolders(String username) {
-        Resident resident = residentRepository.findByPhoneNumber(username)
+    public List<FolderDto> getRootFolders(String email) {
+        Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
@@ -140,8 +140,8 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public List<FolderDto> getSubFolders(Long folderId, String username) {
-        Resident resident = residentRepository.findByPhoneNumber(username)
+    public List<FolderDto> getSubFolders(Long folderId, String email) {
+        Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
@@ -161,8 +161,8 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentDto> getFolderDocuments(Long folderId, String username) {
-        Resident resident = residentRepository.findByPhoneNumber(username)
+    public List<DocumentDto> getFolderDocuments(Long folderId, String email) {
+        Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
@@ -183,8 +183,8 @@ public class DocumentService {
     }
 
     @Transactional
-    public DocumentDto uploadDocument(Long folderId, MultipartFile file, String description, String username) {
-        Resident resident = residentRepository.findByPhoneNumber(username)
+    public DocumentDto uploadDocument(Long folderId, MultipartFile file, String description, String email) {
+        Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
@@ -230,7 +230,7 @@ public class DocumentService {
                     .fileExtension(fileExtension)
                     .folder(folder)
                     .apartment(apartment)
-                    .uploadedBy(username)
+                    .uploadedBy(resident.getIdUsers())
                     .description(description != null ? description.trim() : null)
                     .build();
 
@@ -247,8 +247,8 @@ public class DocumentService {
     }
 
     @Transactional
-    public void deleteFolder(Long folderId, String username) {
-        Resident resident = residentRepository.findByPhoneNumber(username)
+    public void deleteFolder(Long folderId, String email) {
+        Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
@@ -276,8 +276,8 @@ public class DocumentService {
     }
 
     @Transactional
-    public void deleteDocument(Long documentId, String username) {
-        Resident resident = residentRepository.findByPhoneNumber(username)
+    public void deleteDocument(Long documentId, String email) {
+        Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
@@ -304,8 +304,8 @@ public class DocumentService {
         }
     }
 
-    public byte[] downloadDocument(Long documentId, String username) throws IOException {
-        Resident resident = residentRepository.findByPhoneNumber(username)
+    public byte[] downloadDocument(Long documentId, String email) throws IOException {
+        Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
@@ -328,8 +328,8 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentDto> searchDocuments(String query, String username) {
-        Resident resident = residentRepository.findByPhoneNumber(username)
+    public List<DocumentDto> searchDocuments(String query, String email) {
+        Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
