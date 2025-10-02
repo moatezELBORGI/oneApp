@@ -46,37 +46,43 @@ public class DocumentService {
     @Transactional
     public FolderDto createFolder(CreateFolderRequest request, String username) {
         Resident resident = residentRepository.findByPhoneNumber(username)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+                .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("No apartment associated with resident");
+            throw new RuntimeException("Aucun appartement associé au résident");
+        }
+
+        String cleanName = request.getName().trim();
+        if (cleanName.isEmpty()) {
+            throw new RuntimeException("Le nom du dossier ne peut pas être vide");
         }
 
         if (request.getParentFolderId() != null) {
             Folder parentFolder = folderRepository.findByIdAndApartmentId(
                     request.getParentFolderId(), apartment.getId())
-                    .orElseThrow(() -> new RuntimeException("Parent folder not found"));
+                    .orElseThrow(() -> new RuntimeException("Dossier parent non trouvé"));
 
             if (folderRepository.existsByNameAndParentFolderIdAndApartmentId(
-                    request.getName(), request.getParentFolderId(), apartment.getId())) {
-                throw new RuntimeException("Folder with this name already exists in this location");
+                    cleanName, request.getParentFolderId(), apartment.getId())) {
+                throw new RuntimeException("Un dossier avec ce nom existe déjà à cet emplacement");
             }
         } else {
             if (folderRepository.existsByNameAndParentFolderIsNullAndApartmentId(
-                    request.getName(), apartment.getId())) {
-                throw new RuntimeException("Folder with this name already exists in root");
+                    cleanName, apartment.getId())) {
+                throw new RuntimeException("Un dossier avec ce nom existe déjà à la racine");
             }
         }
 
-        String folderPath = buildFolderPath(apartment.getId(), request.getParentFolderId(), request.getName());
+        String folderPath = buildFolderPath(apartment.getId(), request.getParentFolderId(), cleanName);
 
         try {
             Path physicalPath = Paths.get(baseDocumentsDir, folderPath);
             Files.createDirectories(physicalPath);
+            log.info("Dossier physique créé: {}", physicalPath.toAbsolutePath());
         } catch (IOException e) {
-            log.error("Error creating physical folder", e);
-            throw new RuntimeException("Failed to create folder on filesystem", e);
+            log.error("Erreur lors de la création du dossier physique: {}", folderPath, e);
+            throw new RuntimeException("Échec de la création du dossier sur le système de fichiers: " + e.getMessage());
         }
 
         Folder parentFolder = null;
@@ -86,7 +92,7 @@ public class DocumentService {
         }
 
         Folder folder = Folder.builder()
-                .name(request.getName())
+                .name(cleanName)
                 .folderPath(folderPath)
                 .parentFolder(parentFolder)
                 .apartment(apartment)
@@ -94,7 +100,7 @@ public class DocumentService {
                 .build();
 
         folder = folderRepository.save(folder);
-        log.info("Folder created: {} for apartment: {}", folder.getName(), apartment.getId());
+        log.info("Dossier créé en base de données: {} (ID: {}) pour appartement: {}", folder.getName(), folder.getId(), apartment.getId());
 
         return mapToFolderDto(folder);
     }
@@ -102,31 +108,52 @@ public class DocumentService {
     @Transactional(readOnly = true)
     public List<FolderDto> getRootFolders(String username) {
         Resident resident = residentRepository.findByPhoneNumber(username)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+                .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("No apartment associated with resident");
+            throw new RuntimeException("Aucun appartement associé au résident");
         }
 
+        ensureApartmentRootFolderExists(apartment);
+
         List<Folder> folders = folderRepository.findByApartmentIdAndParentFolderIsNull(apartment.getId());
+        log.debug("Récupération de {} dossiers racine pour l'appartement {}", folders.size(), apartment.getId());
+
         return folders.stream()
                 .map(this::mapToFolderDto)
                 .collect(Collectors.toList());
     }
 
+    private void ensureApartmentRootFolderExists(Apartment apartment) {
+        try {
+            String apartmentFolderPath = "apartment_" + apartment.getId();
+            Path physicalPath = Paths.get(baseDocumentsDir, apartmentFolderPath);
+
+            if (!Files.exists(physicalPath)) {
+                Files.createDirectories(physicalPath);
+                log.info("Dossier racine créé pour l'appartement {}: {}", apartment.getId(), physicalPath.toAbsolutePath());
+            }
+        } catch (IOException e) {
+            log.error("Erreur lors de la création du dossier racine de l'appartement {}", apartment.getId(), e);
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<FolderDto> getSubFolders(Long folderId, String username) {
         Resident resident = residentRepository.findByPhoneNumber(username)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+                .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("No apartment associated with resident");
+            throw new RuntimeException("Aucun appartement associé au résident");
         }
 
         Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getId())
-                .orElseThrow(() -> new RuntimeException("Folder not found"));
+                .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
+
+        log.debug("Récupération de {} sous-dossiers pour le dossier {} (ID: {})",
+                folder.getSubFolders().size(), folder.getName(), folderId);
 
         return folder.getSubFolders().stream()
                 .map(this::mapToFolderDto)
@@ -136,17 +163,20 @@ public class DocumentService {
     @Transactional(readOnly = true)
     public List<DocumentDto> getFolderDocuments(Long folderId, String username) {
         Resident resident = residentRepository.findByPhoneNumber(username)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+                .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("No apartment associated with resident");
+            throw new RuntimeException("Aucun appartement associé au résident");
         }
 
-        folderRepository.findByIdAndApartmentId(folderId, apartment.getId())
-                .orElseThrow(() -> new RuntimeException("Folder not found"));
+        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getId())
+                .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         List<Document> documents = documentRepository.findByFolderIdOrderByCreatedAtDesc(folderId);
+        log.debug("Récupération de {} documents pour le dossier {} (ID: {})",
+                documents.size(), folder.getName(), folderId);
+
         return documents.stream()
                 .map(this::mapToDocumentDto)
                 .collect(Collectors.toList());
@@ -155,26 +185,30 @@ public class DocumentService {
     @Transactional
     public DocumentDto uploadDocument(Long folderId, MultipartFile file, String description, String username) {
         Resident resident = residentRepository.findByPhoneNumber(username)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+                .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("No apartment associated with resident");
+            throw new RuntimeException("Aucun appartement associé au résident");
         }
 
         Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getId())
-                .orElseThrow(() -> new RuntimeException("Folder not found"));
+                .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("File is empty");
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Le fichier est vide");
         }
 
         if (file.getSize() > maxFileSize) {
-            throw new IllegalArgumentException("File size exceeds maximum allowed size");
+            throw new IllegalArgumentException("La taille du fichier dépasse la limite autorisée (" + (maxFileSize / 1024 / 1024) + " MB)");
         }
 
         try {
             String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.trim().isEmpty()) {
+                throw new IllegalArgumentException("Le nom du fichier est invalide");
+            }
+
             String fileExtension = getFileExtension(originalFilename);
             String storedFilename = UUID.randomUUID().toString() + fileExtension;
 
@@ -183,6 +217,7 @@ public class DocumentService {
 
             Path filePath = folderPhysicalPath.resolve(storedFilename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            log.info("Fichier physique sauvegardé: {}", filePath.toAbsolutePath());
 
             String relativePath = Paths.get(folder.getFolderPath(), storedFilename).toString();
 
@@ -196,107 +231,120 @@ public class DocumentService {
                     .folder(folder)
                     .apartment(apartment)
                     .uploadedBy(username)
-                    .description(description)
+                    .description(description != null ? description.trim() : null)
                     .build();
 
             document = documentRepository.save(document);
-            log.info("Document uploaded: {} to folder: {}", originalFilename, folder.getName());
+            log.info("Document uploadé: {} (ID: {}) dans le dossier: {} pour appartement: {}",
+                    originalFilename, document.getId(), folder.getName(), apartment.getId());
 
             return mapToDocumentDto(document);
 
         } catch (IOException e) {
-            log.error("Error uploading document", e);
-            throw new RuntimeException("Failed to upload document", e);
+            log.error("Erreur lors de l'upload du document: {}", e.getMessage(), e);
+            throw new RuntimeException("Échec de l'upload du document: " + e.getMessage());
         }
     }
 
     @Transactional
     public void deleteFolder(Long folderId, String username) {
         Resident resident = residentRepository.findByPhoneNumber(username)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+                .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("No apartment associated with resident");
+            throw new RuntimeException("Aucun appartement associé au résident");
         }
 
         Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getId())
-                .orElseThrow(() -> new RuntimeException("Folder not found"));
+                .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         try {
             Path folderPath = Paths.get(baseDocumentsDir, folder.getFolderPath());
             if (Files.exists(folderPath)) {
                 deleteDirectoryRecursively(folderPath);
+                log.info("Dossier physique supprimé: {}", folderPath.toAbsolutePath());
             }
 
             folderRepository.delete(folder);
-            log.info("Folder deleted: {} for apartment: {}", folder.getName(), apartment.getId());
+            log.info("Dossier supprimé: {} (ID: {}) pour appartement: {}", folder.getName(), folderId, apartment.getId());
 
         } catch (IOException e) {
-            log.error("Error deleting folder", e);
-            throw new RuntimeException("Failed to delete folder", e);
+            log.error("Erreur lors de la suppression du dossier: {}", e.getMessage(), e);
+            throw new RuntimeException("Échec de la suppression du dossier: " + e.getMessage());
         }
     }
 
     @Transactional
     public void deleteDocument(Long documentId, String username) {
         Resident resident = residentRepository.findByPhoneNumber(username)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+                .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("No apartment associated with resident");
+            throw new RuntimeException("Aucun appartement associé au résident");
         }
 
         Document document = documentRepository.findByIdAndApartmentId(documentId, apartment.getId())
-                .orElseThrow(() -> new RuntimeException("Document not found"));
+                .orElseThrow(() -> new RuntimeException("Document non trouvé ou accès non autorisé"));
 
         try {
             Path filePath = Paths.get(baseDocumentsDir, document.getFilePath());
             if (Files.exists(filePath)) {
                 Files.delete(filePath);
+                log.info("Fichier physique supprimé: {}", filePath.toAbsolutePath());
             }
 
             documentRepository.delete(document);
-            log.info("Document deleted: {} for apartment: {}", document.getOriginalFilename(), apartment.getId());
+            log.info("Document supprimé: {} (ID: {}) pour appartement: {}", document.getOriginalFilename(), documentId, apartment.getId());
 
         } catch (IOException e) {
-            log.error("Error deleting document", e);
-            throw new RuntimeException("Failed to delete document", e);
+            log.error("Erreur lors de la suppression du document: {}", e.getMessage(), e);
+            throw new RuntimeException("Échec de la suppression du document: " + e.getMessage());
         }
     }
 
     public byte[] downloadDocument(Long documentId, String username) throws IOException {
         Resident resident = residentRepository.findByPhoneNumber(username)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+                .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("No apartment associated with resident");
+            throw new RuntimeException("Aucun appartement associé au résident");
         }
 
         Document document = documentRepository.findByIdAndApartmentId(documentId, apartment.getId())
-                .orElseThrow(() -> new RuntimeException("Document not found"));
+                .orElseThrow(() -> new RuntimeException("Document non trouvé ou accès non autorisé"));
 
         Path filePath = Paths.get(baseDocumentsDir, document.getFilePath());
         if (!Files.exists(filePath)) {
-            throw new RuntimeException("File not found on filesystem");
+            log.error("Fichier physique non trouvé: {}", filePath.toAbsolutePath());
+            throw new RuntimeException("Fichier non trouvé sur le système de fichiers");
         }
 
+        log.info("Téléchargement du document: {} (ID: {}) pour appartement: {}",
+                document.getOriginalFilename(), documentId, apartment.getId());
         return Files.readAllBytes(filePath);
     }
 
     @Transactional(readOnly = true)
     public List<DocumentDto> searchDocuments(String query, String username) {
         Resident resident = residentRepository.findByPhoneNumber(username)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+                .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
         Apartment apartment = resident.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("No apartment associated with resident");
+            throw new RuntimeException("Aucun appartement associé au résident");
         }
 
-        List<Document> documents = documentRepository.searchDocuments(apartment.getId(), query);
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+
+        List<Document> documents = documentRepository.searchDocuments(apartment.getId(), query.trim());
+        log.debug("Recherche '{}' a retourné {} documents pour appartement {}",
+                query, documents.size(), apartment.getId());
+
         return documents.stream()
                 .map(this::mapToDocumentDto)
                 .collect(Collectors.toList());
