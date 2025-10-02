@@ -4,6 +4,7 @@ package be.delomid.oneapp.mschat.mschat.service;
 import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
 import be.delomid.oneapp.mschat.mschat.dto.SendMessageRequest;
 import be.delomid.oneapp.mschat.mschat.dto.FileAttachmentDto;
+import be.delomid.oneapp.mschat.mschat.dto.SharedMediaDto;
 import be.delomid.oneapp.mschat.mschat.interceptor.JwtWebSocketInterceptor;
 import be.delomid.oneapp.mschat.mschat.exception.ChannelNotFoundException;
 import be.delomid.oneapp.mschat.mschat.exception.UnauthorizedAccessException;
@@ -274,6 +275,63 @@ public class MessageService {
                 .isDeleted(message.getIsDeleted())
                 .createdAt(message.getCreatedAt())
                 .updatedAt(message.getUpdatedAt())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SharedMediaDto> getSharedMedia(Long channelId, String userId, Pageable pageable) {
+        validateReadAccess(channelId, userId);
+
+        Page<FileAttachment> attachments = fileAttachmentRepository.findByChannelId(channelId, pageable);
+
+        return attachments.map(this::mapToSharedMediaDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SharedMediaDto> getSharedMediaByType(Long channelId, FileType fileType, String userId, Pageable pageable) {
+        validateReadAccess(channelId, userId);
+
+        Page<FileAttachment> attachments = fileAttachmentRepository.findByChannelIdAndFileType(channelId, fileType, pageable);
+
+        return attachments.map(this::mapToSharedMediaDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SharedMediaDto> getSharedMediaByTypes(Long channelId, List<FileType> fileTypes, String userId, Pageable pageable) {
+        validateReadAccess(channelId, userId);
+
+        Page<FileAttachment> attachments = fileAttachmentRepository.findByChannelIdAndFileTypes(channelId, fileTypes, pageable);
+
+        return attachments.map(this::mapToSharedMediaDto);
+    }
+
+    private SharedMediaDto mapToSharedMediaDto(FileAttachment attachment) {
+        String uploaderName = residentRepository.findByIdUsers(attachment.getUploadedBy())
+                .map(r -> r.getFirstName() + " " + r.getLastName())
+                .orElse("Unknown");
+
+        String messageContent = null;
+        Long messageId = null;
+        if (attachment.getMessage() != null) {
+            messageId = attachment.getMessage().getId();
+            messageContent = attachment.getMessage().getContent();
+        }
+
+        return SharedMediaDto.builder()
+                .id(attachment.getId())
+                .originalFilename(attachment.getOriginalFilename())
+                .storedFilename(attachment.getStoredFilename())
+                .filePath(attachment.getFilePath())
+                .fileSize(attachment.getFileSize())
+                .mimeType(attachment.getMimeType())
+                .fileType(attachment.getFileType())
+                .uploadedBy(attachment.getUploadedBy())
+                .uploaderName(uploaderName)
+                .duration(attachment.getDuration())
+                .thumbnailPath(attachment.getThumbnailPath())
+                .createdAt(attachment.getCreatedAt())
+                .messageId(messageId)
+                .messageContent(messageContent)
                 .build();
     }
 }

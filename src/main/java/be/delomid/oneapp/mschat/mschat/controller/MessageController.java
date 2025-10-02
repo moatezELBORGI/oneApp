@@ -3,6 +3,8 @@ package be.delomid.oneapp.mschat.mschat.controller;
 
 import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
 import be.delomid.oneapp.mschat.mschat.dto.SendMessageRequest;
+import be.delomid.oneapp.mschat.mschat.dto.SharedMediaDto;
+import be.delomid.oneapp.mschat.mschat.model.FileType;
 import be.delomid.oneapp.mschat.mschat.service.MessageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -62,8 +64,65 @@ public class MessageController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/channel/{channelId}/media")
+    public ResponseEntity<Page<SharedMediaDto>> getSharedMedia(
+            @PathVariable Long channelId,
+            @RequestParam(required = false) String type,
+            Authentication authentication,
+            Pageable pageable) {
+
+        String userId = getUserId(authentication);
+        Page<SharedMediaDto> media;
+
+        if (type != null && !type.isEmpty()) {
+            try {
+                FileType fileType = FileType.valueOf(type.toUpperCase());
+                media = messageService.getSharedMediaByType(channelId, fileType, userId, pageable);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        } else {
+            media = messageService.getSharedMedia(channelId, userId, pageable);
+        }
+
+        return ResponseEntity.ok(media);
+    }
+
+    @GetMapping("/channel/{channelId}/media/images")
+    public ResponseEntity<Page<SharedMediaDto>> getSharedImages(
+            @PathVariable Long channelId,
+            Authentication authentication,
+            Pageable pageable) {
+
+        String userId = getUserId(authentication);
+        Page<SharedMediaDto> media = messageService.getSharedMediaByType(channelId, FileType.IMAGE, userId, pageable);
+        return ResponseEntity.ok(media);
+    }
+
+    @GetMapping("/channel/{channelId}/media/videos")
+    public ResponseEntity<Page<SharedMediaDto>> getSharedVideos(
+            @PathVariable Long channelId,
+            Authentication authentication,
+            Pageable pageable) {
+
+        String userId = getUserId(authentication);
+        Page<SharedMediaDto> media = messageService.getSharedMediaByType(channelId, FileType.VIDEO, userId, pageable);
+        return ResponseEntity.ok(media);
+    }
+
+    @GetMapping("/channel/{channelId}/media/documents")
+    public ResponseEntity<Page<SharedMediaDto>> getSharedDocuments(
+            @PathVariable Long channelId,
+            Authentication authentication,
+            Pageable pageable) {
+
+        String userId = getUserId(authentication);
+        Page<SharedMediaDto> media = messageService.getSharedMediaByType(channelId, FileType.DOCUMENT, userId, pageable);
+        return ResponseEntity.ok(media);
+    }
+
     private String getUserId(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return userDetails.getUsername(); // Email, mais on devrait récupérer l'ID
+        return userDetails.getUsername();
     }
 }

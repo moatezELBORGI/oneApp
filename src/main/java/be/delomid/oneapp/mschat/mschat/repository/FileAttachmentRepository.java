@@ -32,4 +32,13 @@ public interface FileAttachmentRepository extends JpaRepository<FileAttachment, 
 
     @Query("SELECT SUM(f.fileSize) FROM FileAttachment f WHERE f.uploadedBy = :userId")
     Long getTotalFileSizeByUser(@Param("userId") String userId);
+
+    @Query("SELECT f FROM FileAttachment f WHERE f.message.channel.id = :channelId ORDER BY f.createdAt DESC")
+    Page<FileAttachment> findByChannelId(@Param("channelId") Long channelId, Pageable pageable);
+
+    @Query("SELECT f FROM FileAttachment f WHERE f.message.channel.id = :channelId AND f.fileType = :fileType ORDER BY f.createdAt DESC")
+    Page<FileAttachment> findByChannelIdAndFileType(@Param("channelId") Long channelId, @Param("fileType") FileType fileType, Pageable pageable);
+
+    @Query("SELECT f FROM FileAttachment f WHERE f.message.channel.id = :channelId AND f.fileType IN :fileTypes ORDER BY f.createdAt DESC")
+    Page<FileAttachment> findByChannelIdAndFileTypes(@Param("channelId") Long channelId, @Param("fileTypes") List<FileType> fileTypes, Pageable pageable);
 }

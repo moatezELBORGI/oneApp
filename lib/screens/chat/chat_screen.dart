@@ -13,6 +13,7 @@ import '../../models/message_model.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/typing_indicator.dart';
 import '../../services/audio_service.dart';
+import 'shared_media_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final Channel channel;
@@ -305,17 +306,33 @@ class _ChatScreenState extends State<ChatScreen> {
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
+                builder: (context) => SharedMediaScreen(
+                  channelId: widget.channel.id,
+                  channelName: widget.channel.name,
+                ),
+              ),
+            );
+          },
+          icon: const Icon(Icons.photo_library_outlined),
+          tooltip: 'Médias partagés',
+        ),
+        IconButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
                 builder: (context) => VoteScreen(channel: widget.channel),
               ),
             );
           },
           icon: const Icon(Icons.poll),
+          tooltip: 'Votes',
         ),
         IconButton(
           onPressed: () {
             _showChannelInfo();
           },
           icon: const Icon(Icons.info_outline),
+          tooltip: 'Informations',
         ),
       ],
     );
