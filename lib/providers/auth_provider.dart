@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
+import '../models/building_selection_model.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../services/websocket_service.dart';
@@ -13,12 +14,14 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String? _currentUserId;
+  List<BuildingSelectionModel> _availableBuildings = [];
 
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _user != null;
   String? get currentUserId => _currentUserId;
+  List<BuildingSelectionModel> get availableBuildings => _availableBuildings;
 
   AuthProvider() {
     _loadUserFromStorage();
@@ -191,6 +194,24 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       _setError(e.toString());
       return [];
+    }
+  }
+
+  Future<void> loadAvailableBuildings() async {
+    if (_isLoading) return;
+
+    _setLoading(true);
+    try {
+      final buildings = await _apiService.getUserBuildings();
+      _availableBuildings = buildings
+          .map((json) => BuildingSelectionModel.fromJson(json))
+          .toList();
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+      _availableBuildings = [];
+    } finally {
+      _setLoading(false);
     }
   }
 
