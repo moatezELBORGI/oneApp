@@ -1,6 +1,6 @@
 package be.delomid.oneapp.mschat.mschat.dto;
 
-import be.delomid.oneapp.mschat.mschat.model.FileType;
+import be.delomid.oneapp.mschat.mschat.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,18 +13,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class SharedMediaDto {
-    private Long id;
-    private String originalFilename;
-    private String storedFilename;
-    private String filePath;
-    private Long fileSize;
-    private String mimeType;
-    private FileType fileType;
-    private String uploadedBy;
-    private String uploaderName;
-    private Integer duration;
-    private String thumbnailPath;
-    private LocalDateTime createdAt;
     private Long messageId;
+    private String mediaUrl;
+    private MessageType messageType;
+    private String senderId;
+    private String senderName;
+    private LocalDateTime createdAt;
     private String messageContent;
 }

@@ -176,7 +176,7 @@ class _SharedMediaScreenState extends State<SharedMediaScreen> with SingleTicker
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: CachedNetworkImage(
-                  imageUrl: '${Constants.baseUrl}/files/${media.storedFilename}',
+                  imageUrl: media.mediaUrl,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => const Center(
                     child: CircularProgressIndicator(),
@@ -194,29 +194,13 @@ class _SharedMediaScreenState extends State<SharedMediaScreen> with SingleTicker
                       color: Colors.black,
                       child: const Icon(Icons.play_circle_outline, size: 48, color: Colors.white),
                     ),
-                    if (media.duration != null)
-                      Positioned(
-                        bottom: 4,
-                        right: 4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.black54,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            _formatDuration(media.duration!),
-                            style: const TextStyle(color: Colors.white, fontSize: 10),
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               )
             else
               Center(
                 child: Icon(
-                  _getFileIcon(media.fileType),
+                  _getFileIcon(media.messageType),
                   size: 48,
                   color: Colors.grey[600],
                 ),
@@ -246,14 +230,14 @@ class _SharedMediaScreenState extends State<SharedMediaScreen> with SingleTicker
       itemBuilder: (context, index) {
         final doc = documents[index];
         return ListTile(
-          leading: Icon(_getFileIcon(doc.fileType), size: 40),
-          title: Text(doc.originalFilename),
+          leading: Icon(_getFileIcon(doc.messageType), size: 40),
+          title: Text(doc.fileName),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(doc.uploaderName),
+              Text(doc.senderName),
               Text(
-                '${doc.getFormattedSize()} • ${DateFormat('dd/MM/yyyy').format(doc.createdAt)}',
+                DateFormat('dd/MM/yyyy').format(doc.createdAt),
                 style: const TextStyle(fontSize: 12),
               ),
             ],
@@ -297,7 +281,7 @@ class _SharedMediaScreenState extends State<SharedMediaScreen> with SingleTicker
                     children: [
                       if (media.isImage)
                         CachedNetworkImage(
-                          imageUrl: '${Constants.baseUrl}/files/${media.storedFilename}',
+                          imageUrl: media.mediaUrl,
                           fit: BoxFit.contain,
                         ),
                       Padding(
@@ -306,19 +290,12 @@ class _SharedMediaScreenState extends State<SharedMediaScreen> with SingleTicker
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              media.originalFilename,
+                              media.fileName,
                               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 8),
-                            Text('Partagé par: ${media.uploaderName}'),
+                            Text('Partagé par: ${media.senderName}'),
                             Text('Date: ${DateFormat('dd/MM/yyyy à HH:mm').format(media.createdAt)}'),
-                            Text('Taille: ${media.getFormattedSize()}'),
-                            if (media.messageContent != null && media.messageContent!.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              const Text('Message:', style: TextStyle(fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 4),
-                              Text(media.messageContent!),
-                            ],
                           ],
                         ),
                       ),
@@ -333,24 +310,18 @@ class _SharedMediaScreenState extends State<SharedMediaScreen> with SingleTicker
     );
   }
 
-  IconData _getFileIcon(String fileType) {
-    switch (fileType) {
+  IconData _getFileIcon(String messageType) {
+    switch (messageType) {
       case 'IMAGE':
         return Icons.image;
       case 'VIDEO':
         return Icons.video_library;
       case 'AUDIO':
         return Icons.audiotrack;
-      case 'DOCUMENT':
+      case 'FILE':
         return Icons.description;
       default:
         return Icons.insert_drive_file;
     }
-  }
-
-  String _formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 }

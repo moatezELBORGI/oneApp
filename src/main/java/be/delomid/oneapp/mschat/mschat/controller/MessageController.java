@@ -4,7 +4,7 @@ package be.delomid.oneapp.mschat.mschat.controller;
 import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
 import be.delomid.oneapp.mschat.mschat.dto.SendMessageRequest;
 import be.delomid.oneapp.mschat.mschat.dto.SharedMediaDto;
-import be.delomid.oneapp.mschat.mschat.model.FileType;
+import be.delomid.oneapp.mschat.mschat.model.MessageType;
 import be.delomid.oneapp.mschat.mschat.service.MessageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -76,8 +76,8 @@ public class MessageController {
 
         if (type != null && !type.isEmpty()) {
             try {
-                FileType fileType = FileType.valueOf(type.toUpperCase());
-                media = messageService.getSharedMediaByType(channelId, fileType, userId, pageable);
+                MessageType messageType = MessageType.valueOf(type.toUpperCase());
+                media = messageService.getSharedMediaByType(channelId, messageType, userId, pageable);
             } catch (IllegalArgumentException e) {
                 return ResponseEntity.badRequest().build();
             }
@@ -95,7 +95,7 @@ public class MessageController {
             Pageable pageable) {
 
         String userId = getUserId(authentication);
-        Page<SharedMediaDto> media = messageService.getSharedMediaByType(channelId, FileType.IMAGE, userId, pageable);
+        Page<SharedMediaDto> media = messageService.getSharedMediaByType(channelId, MessageType.IMAGE, userId, pageable);
         return ResponseEntity.ok(media);
     }
 
@@ -106,7 +106,7 @@ public class MessageController {
             Pageable pageable) {
 
         String userId = getUserId(authentication);
-        Page<SharedMediaDto> media = messageService.getSharedMediaByType(channelId, FileType.VIDEO, userId, pageable);
+        Page<SharedMediaDto> media = messageService.getSharedMediaByType(channelId, MessageType.VIDEO, userId, pageable);
         return ResponseEntity.ok(media);
     }
 
@@ -117,7 +117,7 @@ public class MessageController {
             Pageable pageable) {
 
         String userId = getUserId(authentication);
-        Page<SharedMediaDto> media = messageService.getSharedMediaByType(channelId, FileType.DOCUMENT, userId, pageable);
+        Page<SharedMediaDto> media = messageService.getSharedMediaByType(channelId, MessageType.FILE, userId, pageable);
         return ResponseEntity.ok(media);
     }
 

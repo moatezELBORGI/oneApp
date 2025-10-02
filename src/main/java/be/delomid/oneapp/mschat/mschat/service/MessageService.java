@@ -298,56 +298,43 @@ public class MessageService {
     public Page<SharedMediaDto> getSharedMedia(Long channelId, String userId, Pageable pageable) {
         validateReadAccess(channelId, userId);
 
-        Page<FileAttachment> attachments = fileAttachmentRepository.findByChannelId(channelId, pageable);
+        List<MessageType> mediaTypes = List.of(MessageType.IMAGE, MessageType.VIDEO, MessageType.FILE, MessageType.AUDIO);
+        Page<Message> messages = messageRepository.findByChannelIdAndTypeIn(channelId, mediaTypes, pageable);
 
-        return attachments.map(this::mapToSharedMediaDto);
+        return messages.map(this::mapMessageToSharedMediaDto);
     }
 
     @Transactional(readOnly = true)
-    public Page<SharedMediaDto> getSharedMediaByType(Long channelId, FileType fileType, String userId, Pageable pageable) {
+    public Page<SharedMediaDto> getSharedMediaByType(Long channelId, MessageType messageType, String userId, Pageable pageable) {
         validateReadAccess(channelId, userId);
 
-        Page<FileAttachment> attachments = fileAttachmentRepository.findByChannelIdAndFileType(channelId, fileType, pageable);
+        Page<Message> messages = messageRepository.findByChannelIdAndType(channelId, messageType, pageable);
 
-        return attachments.map(this::mapToSharedMediaDto);
+        return messages.map(this::mapMessageToSharedMediaDto);
     }
 
     @Transactional(readOnly = true)
-    public Page<SharedMediaDto> getSharedMediaByTypes(Long channelId, List<FileType> fileTypes, String userId, Pageable pageable) {
+    public Page<SharedMediaDto> getSharedMediaByTypes(Long channelId, List<MessageType> messageTypes, String userId, Pageable pageable) {
         validateReadAccess(channelId, userId);
 
-        Page<FileAttachment> attachments = fileAttachmentRepository.findByChannelIdAndFileTypes(channelId, fileTypes, pageable);
+        Page<Message> messages = messageRepository.findByChannelIdAndTypeIn(channelId, messageTypes, pageable);
 
-        return attachments.map(this::mapToSharedMediaDto);
+        return messages.map(this::mapMessageToSharedMediaDto);
     }
 
-    private SharedMediaDto mapToSharedMediaDto(FileAttachment attachment) {
-        String uploaderName = residentRepository.findById(attachment.getUploadedBy())
+    private SharedMediaDto mapMessageToSharedMediaDto(Message message) {
+        String senderName = residentRepository.findById(message.getSenderId())
                 .map(r -> r.getFname() + " " + r.getLname())
                 .orElse("Unknown");
 
-        String messageContent = null;
-        Long messageId = null;
-        if (attachment.getMessage() != null) {
-            messageId = attachment.getMessage().getId();
-            messageContent = attachment.getMessage().getContent();
-        }
-
         return SharedMediaDto.builder()
-                .id(attachment.getId())
-                .originalFilename(attachment.getOriginalFilename())
-                .storedFilename(attachment.getStoredFilename())
-                .filePath(attachment.getFilePath())
-                .fileSize(attachment.getFileSize())
-                .mimeType(attachment.getMimeType())
-                .fileType(attachment.getFileType())
-                .uploadedBy(attachment.getUploadedBy())
-                .uploaderName(uploaderName)
-                .duration(attachment.getDuration())
-                .thumbnailPath(attachment.getThumbnailPath())
-                .createdAt(attachment.getCreatedAt())
-                .messageId(messageId)
-                .messageContent(messageContent)
+                .messageId(message.getId())
+                .mediaUrl(message.getContent())
+                .messageType(message.getType())
+                .senderId(message.getSenderId())
+                .senderName(senderName)
+                .createdAt(message.getCreatedAt())
+                .messageContent(message.getContent())
                 .build();
     }
 }

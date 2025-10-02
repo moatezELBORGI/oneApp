@@ -1,69 +1,49 @@
 class SharedMediaModel {
-  final int id;
-  final String originalFilename;
-  final String storedFilename;
-  final String filePath;
-  final int fileSize;
-  final String? mimeType;
-  final String fileType;
-  final String uploadedBy;
-  final String uploaderName;
-  final int? duration;
-  final String? thumbnailPath;
+  final int messageId;
+  final String mediaUrl;
+  final String messageType;
+  final String senderId;
+  final String senderName;
   final DateTime createdAt;
-  final int? messageId;
-  final String? messageContent;
+  final String messageContent;
 
   SharedMediaModel({
-    required this.id,
-    required this.originalFilename,
-    required this.storedFilename,
-    required this.filePath,
-    required this.fileSize,
-    this.mimeType,
-    required this.fileType,
-    required this.uploadedBy,
-    required this.uploaderName,
-    this.duration,
-    this.thumbnailPath,
+    required this.messageId,
+    required this.mediaUrl,
+    required this.messageType,
+    required this.senderId,
+    required this.senderName,
     required this.createdAt,
-    this.messageId,
-    this.messageContent,
+    required this.messageContent,
   });
 
   factory SharedMediaModel.fromJson(Map<String, dynamic> json) {
     return SharedMediaModel(
-      id: json['id'],
-      originalFilename: json['originalFilename'],
-      storedFilename: json['storedFilename'],
-      filePath: json['filePath'],
-      fileSize: json['fileSize'],
-      mimeType: json['mimeType'],
-      fileType: json['fileType'],
-      uploadedBy: json['uploadedBy'],
-      uploaderName: json['uploaderName'],
-      duration: json['duration'],
-      thumbnailPath: json['thumbnailPath'],
-      createdAt: DateTime.parse(json['createdAt']),
       messageId: json['messageId'],
+      mediaUrl: json['mediaUrl'],
+      messageType: json['messageType'],
+      senderId: json['senderId'],
+      senderName: json['senderName'],
+      createdAt: DateTime.parse(json['createdAt']),
       messageContent: json['messageContent'],
     );
   }
 
-  String getFormattedSize() {
-    if (fileSize < 1024) {
-      return '$fileSize B';
-    } else if (fileSize < 1024 * 1024) {
-      return '${(fileSize / 1024).toStringAsFixed(1)} KB';
-    } else if (fileSize < 1024 * 1024 * 1024) {
-      return '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
-    } else {
-      return '${(fileSize / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-    }
-  }
+  bool get isImage => messageType == 'IMAGE';
+  bool get isVideo => messageType == 'VIDEO';
+  bool get isDocument => messageType == 'FILE';
+  bool get isAudio => messageType == 'AUDIO';
 
-  bool get isImage => fileType == 'IMAGE';
-  bool get isVideo => fileType == 'VIDEO';
-  bool get isDocument => fileType == 'DOCUMENT';
-  bool get isAudio => fileType == 'AUDIO';
+  String get fileName {
+    try {
+      final uri = Uri.parse(mediaUrl);
+      final segments = uri.pathSegments;
+      if (segments.isNotEmpty) {
+        return segments.last;
+      }
+    } catch (e) {
+      // Si ce n'est pas une URL, retourner le contenu
+    }
+    return messageContent;
+  }
 }
