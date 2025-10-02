@@ -7,6 +7,7 @@ import 'providers/chat_provider.dart';
 import 'providers/channel_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/vote_provider.dart';
+import 'providers/document_provider.dart';
 import 'services/api_service.dart';
 import 'services/websocket_service.dart';
 import 'services/storage_service.dart';
@@ -48,6 +49,7 @@ class MGIApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ChannelProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => VoteProvider()),
+        ChangeNotifierProvider(create: (_) => DocumentProvider()),
       ],
       child: MaterialApp(
         title: 'MGI',

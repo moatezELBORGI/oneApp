@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/notification_provider.dart';
+import '../../providers/document_provider.dart';
 import '../../utils/app_theme.dart';
+import '../../models/folder_model.dart';
+import '../../models/document_model.dart';
+import '../../services/document_service.dart';
+import 'dart:io';
 
 class FilesScreen extends StatefulWidget {
   const FilesScreen({super.key});
@@ -10,223 +14,182 @@ class FilesScreen extends StatefulWidget {
   State<FilesScreen> createState() => _FilesScreenState();
 }
 
-class _FilesScreenState extends State<FilesScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _FilesScreenState extends State<FilesScreen> {
+  final DocumentService _documentService = DocumentService();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DocumentProvider>().loadRootFolders();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text('Mes Fichiers'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppTheme.primaryColor,
-          unselectedLabelColor: AppTheme.textSecondary,
-          indicatorColor: AppTheme.primaryColor,
-          tabs: const [
-            Tab(text: 'Récents'),
-            Tab(text: 'Images'),
-            Tab(text: 'Documents'),
+    return Consumer<DocumentProvider>(
+      builder: (context, documentProvider, child) {
+        return Scaffold(
+          backgroundColor: AppTheme.backgroundColor,
+          appBar: AppBar(
+            title: Text(
+              documentProvider.currentFolder?.name ?? 'Mes Documents',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: documentProvider.canGoBack
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      documentProvider.goBack();
+                    },
+                  )
+                : null,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () {
+                  _showSearchDialog();
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () {
+                  documentProvider.refresh();
+                },
+              ),
+            ],
+          ),
+          body: _buildBody(documentProvider),
+          floatingActionButton: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FloatingActionButton(
+                heroTag: "create_folder_fab",
+                onPressed: () {
+                  _showCreateFolderDialog();
+                },
+                backgroundColor: AppTheme.primaryColor,
+                child: const Icon(Icons.create_new_folder),
+              ),
+              const SizedBox(height: 16),
+              FloatingActionButton(
+                heroTag: "upload_file_fab",
+                onPressed: () {
+                  _showUploadFileDialog();
+                },
+                backgroundColor: AppTheme.accentColor,
+                child: const Icon(Icons.upload_file),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBody(DocumentProvider documentProvider) {
+    if (documentProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (documentProvider.error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Erreur',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              documentProvider.error!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                documentProvider.clearError();
+                documentProvider.refresh();
+              },
+              child: const Text('Réessayer'),
+            ),
           ],
         ),
-        actions: [
-          Consumer<NotificationProvider>(
-            builder: (context, notificationProvider, child) {
-              return IconButton(
-                onPressed: () {
-                  notificationProvider.clearNewFiles();
-                },
-                icon: Stack(
-                  children: [
-                    const Icon(Icons.notifications_outlined),
-                    if (notificationProvider.newFiles > 0)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.errorColor,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            '${notificationProvider.newFiles}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            },
+      );
+    }
+
+    final folders = documentProvider.folders;
+    final documents = documentProvider.documents;
+
+    if (folders.isEmpty && documents.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Aucun fichier',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Créez un dossier ou uploadez un fichier',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (folders.isNotEmpty) ...[
+          const Text(
+            'Dossiers',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          const SizedBox(height: 12),
+          ...folders.map((folder) => _buildFolderCard(folder, documentProvider)),
+          const SizedBox(height: 24),
         ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildRecentFiles(),
-          _buildImageFiles(),
-          _buildDocumentFiles(),
+        if (documents.isNotEmpty) ...[
+          const Text(
+            'Fichiers',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...documents.map((document) => _buildDocumentCard(document, documentProvider)),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: "files_fab",
-        onPressed: () {
-          // Simuler l'ajout d'un nouveau fichier
-          Provider.of<NotificationProvider>(context, listen: false).incrementNewFiles();
-        },
-        backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.add),
-      ),
+      ],
     );
   }
 
-  Widget _buildRecentFiles() {
-    final recentFiles = [
-      {
-        'name': 'Règlement intérieur.pdf',
-        'type': 'PDF',
-        'size': '2.3 MB',
-        'date': '2 heures',
-        'icon': Icons.picture_as_pdf,
-        'color': Colors.red,
-      },
-      {
-        'name': 'Photo_immeuble.jpg',
-        'type': 'Image',
-        'size': '1.8 MB',
-        'date': '1 jour',
-        'icon': Icons.image,
-        'color': Colors.blue,
-      },
-      {
-        'name': 'Facture_eau.pdf',
-        'type': 'PDF',
-        'size': '856 KB',
-        'date': '3 jours',
-        'icon': Icons.picture_as_pdf,
-        'color': Colors.red,
-      },
-      {
-        'name': 'Planning_travaux.docx',
-        'type': 'Document',
-        'size': '1.2 MB',
-        'date': '1 semaine',
-        'icon': Icons.description,
-        'color': Colors.orange,
-      },
-    ];
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: recentFiles.length,
-      itemBuilder: (context, index) {
-        final file = recentFiles[index];
-        return _buildFileCard(file);
-      },
-    );
-  }
-
-  Widget _buildImageFiles() {
-    final imageFiles = [
-      {
-        'name': 'Photo_immeuble.jpg',
-        'type': 'Image',
-        'size': '1.8 MB',
-        'date': '1 jour',
-        'icon': Icons.image,
-        'color': Colors.blue,
-      },
-      {
-        'name': 'Jardin_commun.png',
-        'type': 'Image',
-        'size': '3.2 MB',
-        'date': '2 jours',
-        'icon': Icons.image,
-        'color': Colors.blue,
-      },
-    ];
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.8,
-      ),
-      itemCount: imageFiles.length,
-      itemBuilder: (context, index) {
-        final file = imageFiles[index];
-        return _buildImageCard(file);
-      },
-    );
-  }
-
-  Widget _buildDocumentFiles() {
-    final documentFiles = [
-      {
-        'name': 'Règlement intérieur.pdf',
-        'type': 'PDF',
-        'size': '2.3 MB',
-        'date': '2 heures',
-        'icon': Icons.picture_as_pdf,
-        'color': Colors.red,
-      },
-      {
-        'name': 'Facture_eau.pdf',
-        'type': 'PDF',
-        'size': '856 KB',
-        'date': '3 jours',
-        'icon': Icons.picture_as_pdf,
-        'color': Colors.red,
-      },
-      {
-        'name': 'Planning_travaux.docx',
-        'type': 'Document',
-        'size': '1.2 MB',
-        'date': '1 semaine',
-        'icon': Icons.description,
-        'color': Colors.orange,
-      },
-    ];
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: documentFiles.length,
-      itemBuilder: (context, index) {
-        final file = documentFiles[index];
-        return _buildFileCard(file);
-      },
-    );
-  }
-
-  Widget _buildFileCard(Map<String, dynamic> file) {
+  Widget _buildFolderCard(FolderModel folder, DocumentProvider provider) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -234,17 +197,90 @@ class _FilesScreenState extends State<FilesScreen> with SingleTickerProviderStat
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: (file['color'] as Color).withOpacity(0.1),
+            color: AppTheme.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
-            file['icon'] as IconData,
-            color: file['color'] as Color,
+            Icons.folder,
+            color: AppTheme.primaryColor,
+            size: 28,
+          ),
+        ),
+        title: Text(
+          folder.name,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(
+          '${folder.subFolderCount} dossiers • ${folder.documentCount} fichiers',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 12,
+          ),
+        ),
+        trailing: PopupMenuButton(
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, size: 18, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Supprimer', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
+          onSelected: (value) {
+            if (value == 'delete') {
+              _confirmDeleteFolder(folder, provider);
+            }
+          },
+        ),
+        onTap: () {
+          provider.openFolder(folder);
+        },
+      ),
+    );
+  }
+
+  Widget _buildDocumentCard(DocumentModel document, DocumentProvider provider) {
+    IconData icon;
+    Color color;
+
+    if (document.isImage) {
+      icon = Icons.image;
+      color = Colors.blue;
+    } else if (document.isPdf) {
+      icon = Icons.picture_as_pdf;
+      color = Colors.red;
+    } else if (document.isDocument) {
+      icon = Icons.description;
+      color = Colors.orange;
+    } else {
+      icon = Icons.insert_drive_file;
+      color = Colors.grey;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: color,
             size: 24,
           ),
         ),
         title: Text(
-          file['name'] as String,
+          document.originalFilename,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
           ),
@@ -255,41 +291,33 @@ class _FilesScreenState extends State<FilesScreen> with SingleTickerProviderStat
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${file['type']} • ${file['size']}',
+              document.getFormattedSize(),
               style: TextStyle(
                 color: Colors.grey[600],
                 fontSize: 12,
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              'Il y a ${file['date']}',
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 11,
+            if (document.description != null && document.description!.isNotEmpty)
+              Text(
+                document.description!,
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 11,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
           ],
         ),
         trailing: PopupMenuButton(
           itemBuilder: (context) => [
             const PopupMenuItem(
-              value: 'open',
+              value: 'download',
               child: Row(
                 children: [
-                  Icon(Icons.open_in_new, size: 18),
+                  Icon(Icons.download, size: 18),
                   SizedBox(width: 8),
-                  Text('Ouvrir'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'share',
-              child: Row(
-                children: [
-                  Icon(Icons.share, size: 18),
-                  SizedBox(width: 8),
-                  Text('Partager'),
+                  Text('Télécharger'),
                 ],
               ),
             ),
@@ -305,71 +333,198 @@ class _FilesScreenState extends State<FilesScreen> with SingleTickerProviderStat
             ),
           ],
           onSelected: (value) {
-            // Handle file actions
-            switch (value) {
-              case 'open':
-              // Open file
-                break;
-              case 'share':
-              // Share file
-                break;
-              case 'delete':
-              // Delete file
-                break;
+            if (value == 'delete') {
+              _confirmDeleteDocument(document, provider);
+            } else if (value == 'download') {
+              _downloadDocument(document);
             }
           },
         ),
         onTap: () {
-          // Open file
+          _previewDocument(document);
         },
       ),
     );
   }
 
-  Widget _buildImageCard(Map<String, dynamic> file) {
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-              ),
-              child: Icon(
-                Icons.image,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-            ),
+  void _showCreateFolderDialog() {
+    final nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nouveau dossier'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            labelText: 'Nom du dossier',
+            border: OutlineInputBorder(),
           ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  file['name'] as String,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  file['size'] as String,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                context
+                    .read<DocumentProvider>()
+                    .createFolder(nameController.text.trim());
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Créer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUploadFileDialog() async {
+    final file = await _documentService.pickFile();
+    if (file == null) return;
+
+    if (!mounted) return;
+
+    final descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Uploader un fichier'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Fichier: ${file.path.split('/').last}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description (optionnel)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
             ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<DocumentProvider>().uploadDocument(
+                    file,
+                    description: descriptionController.text.trim().isEmpty
+                        ? null
+                        : descriptionController.text.trim(),
+                  );
+              Navigator.pop(context);
+            },
+            child: const Text('Uploader'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteFolder(FolderModel folder, DocumentProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: Text(
+            'Voulez-vous vraiment supprimer le dossier "${folder.name}" et tout son contenu?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              provider.deleteFolder(folder.id);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteDocument(DocumentModel document, DocumentProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: Text(
+            'Voulez-vous vraiment supprimer le fichier "${document.originalFilename}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              provider.deleteDocument(document.id);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _downloadDocument(DocumentModel document) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Téléchargement de ${document.originalFilename}...'),
+      ),
+    );
+  }
+
+  void _previewDocument(DocumentModel document) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Aperçu de ${document.originalFilename}'),
+      ),
+    );
+  }
+
+  void _showSearchDialog() {
+    final searchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rechercher'),
+        content: TextField(
+          controller: searchController,
+          decoration: const InputDecoration(
+            labelText: 'Rechercher un fichier',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.search),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Rechercher'),
           ),
         ],
       ),
