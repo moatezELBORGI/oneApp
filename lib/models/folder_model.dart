@@ -6,6 +6,7 @@ class FolderModel {
   final String? apartmentId;
   final String? buildingId;
   final String createdBy;
+  final bool isShared;
   final DateTime createdAt;
   final int subFolderCount;
   final int documentCount;
@@ -18,6 +19,7 @@ class FolderModel {
     this.apartmentId,
     this.buildingId,
     required this.createdBy,
+    this.isShared = false,
     required this.createdAt,
     this.subFolderCount = 0,
     this.documentCount = 0,
@@ -32,6 +34,7 @@ class FolderModel {
       apartmentId: json['apartmentId'],
       buildingId: json['buildingId'],
       createdBy: json['createdBy'],
+      isShared: json['isShared'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
       subFolderCount: json['subFolderCount'] ?? 0,
       documentCount: json['documentCount'] ?? 0,
@@ -47,6 +50,7 @@ class FolderModel {
       'apartmentId': apartmentId,
       'buildingId': buildingId,
       'createdBy': createdBy,
+      'isShared': isShared,
       'createdAt': createdAt.toIso8601String(),
       'subFolderCount': subFolderCount,
       'documentCount': documentCount,

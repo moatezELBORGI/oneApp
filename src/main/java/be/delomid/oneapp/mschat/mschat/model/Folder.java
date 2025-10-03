@@ -52,6 +52,10 @@ public class Folder {
     @Column(name = "created_by", nullable = false)
     private String createdBy;
 
+    @Builder.Default
+    @Column(name = "is_shared")
+    private Boolean isShared = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

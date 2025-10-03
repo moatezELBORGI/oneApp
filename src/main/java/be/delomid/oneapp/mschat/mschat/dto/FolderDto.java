@@ -20,6 +20,7 @@ public class FolderDto {
     private String apartmentId;
     private String buildingId;
     private String createdBy;
+    private Boolean isShared;
     private LocalDateTime createdAt;
     private Integer subFolderCount;
     private Integer documentCount;

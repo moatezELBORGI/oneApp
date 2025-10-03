@@ -15,4 +15,6 @@ public class CreateFolderRequest {
     private Long parentFolderId;
 
     private String description;
+
+    private Boolean isShared;
 }

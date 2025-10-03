@@ -12,6 +12,11 @@ import java.util.Optional;
 @Repository
 public interface FolderRepository extends JpaRepository<Folder, Long> {
 
+    @Query("SELECT f FROM Folder f WHERE f.building.buildingId = :buildingId AND f.parentFolder IS NULL " +
+           "AND (f.isShared = true OR f.apartment.idApartment = :apartmentId)")
+    List<Folder> findRootFoldersByBuildingAndApartment(@Param("buildingId") String buildingId,
+                                                        @Param("apartmentId") String apartmentId);
+
     @Query("SELECT f FROM Folder f WHERE f.building.buildingId = :buildingId AND f.parentFolder IS NULL")
     List<Folder> findByBuildingIdAndParentFolderIsNull(@Param("buildingId") String buildingId);
 
@@ -23,6 +28,12 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
     @Query("SELECT f FROM Folder f WHERE f.building.buildingId = :buildingId AND f.parentFolder.id = :parentId")
     List<Folder> findByBuildingIdAndParentFolderId(@Param("buildingId") String buildingId,
                                                      @Param("parentId") Long parentId);
+
+    @Query("SELECT f FROM Folder f WHERE f.id = :id AND f.building.buildingId = :buildingId " +
+           "AND (f.isShared = true OR f.apartment.idApartment = :apartmentId)")
+    Optional<Folder> findByIdAndBuildingAndApartment(@Param("id") Long id,
+                                                      @Param("buildingId") String buildingId,
+                                                      @Param("apartmentId") String apartmentId);
 
     @Query("SELECT f FROM Folder f WHERE f.id = :id AND f.building.buildingId = :buildingId")
     Optional<Folder> findByIdAndBuildingId(@Param("id") Long id, @Param("buildingId") String buildingId);

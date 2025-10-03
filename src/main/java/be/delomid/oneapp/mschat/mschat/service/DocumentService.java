@@ -74,8 +74,8 @@ public class DocumentService {
         }
 
         if (request.getParentFolderId() != null) {
-            Folder parentFolder = folderRepository.findByIdAndBuildingId(
-                    request.getParentFolderId(), buildingId)
+            Folder parentFolder = folderRepository.findByIdAndBuildingAndApartment(
+                    request.getParentFolderId(), buildingId, apartment.getIdApartment())
                     .orElseThrow(() -> new RuntimeException("Dossier parent non trouvé"));
 
             if (folderRepository.existsByNameAndParentFolderIdAndBuildingId(
@@ -106,6 +106,14 @@ public class DocumentService {
                     .orElse(null);
         }
 
+        boolean isShared = request.getIsShared() != null ? request.getIsShared() : false;
+        String userRole = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentUserRole();
+        boolean isAdmin = "ADMIN".equals(userRole) || "SYNDIC".equals(userRole);
+
+        if (isShared && !isAdmin) {
+            throw new RuntimeException("Seuls les administrateurs peuvent créer des dossiers partagés");
+        }
+
         Folder folder = Folder.builder()
                 .name(cleanName)
                 .folderPath(folderPath)
@@ -113,11 +121,12 @@ public class DocumentService {
                 .apartment(apartment)
                 .building(building)
                 .createdBy(resident.getIdUsers())
+                .isShared(isShared)
                 .build();
 
         folder = folderRepository.save(folder);
-        log.info("Dossier créé en base de données: {} (ID: {}) pour appartement: {} (immeuble: {})",
-                folder.getName(), folder.getId(), apartment.getIdApartment(), buildingId);
+        log.info("Dossier créé en base de données: {} (ID: {}) pour appartement: {} (immeuble: {}) - Partagé: {}",
+                folder.getName(), folder.getId(), apartment.getIdApartment(), buildingId, isShared);
 
         return mapToFolderDto(folder);
     }
@@ -132,8 +141,13 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        List<Folder> folders = folderRepository.findByBuildingIdAndParentFolderIsNull(buildingId);
-        log.debug("Récupération de {} dossiers racine pour l'immeuble {}", folders.size(), buildingId);
+        Apartment apartment = resident.getApartment();
+        if (apartment == null) {
+            throw new RuntimeException("Aucun appartement associé au résident");
+        }
+
+        List<Folder> folders = folderRepository.findRootFoldersByBuildingAndApartment(buildingId, apartment.getIdApartment());
+        log.debug("Récupération de {} dossiers racine pour l'immeuble {} et appartement {}", folders.size(), buildingId, apartment.getIdApartment());
 
         return folders.stream()
                 .map(this::mapToFolderDto)
@@ -150,13 +164,20 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Folder folder = folderRepository.findByIdAndBuildingId(folderId, buildingId)
+        Apartment apartment = resident.getApartment();
+        if (apartment == null) {
+            throw new RuntimeException("Aucun appartement associé au résident");
+        }
+
+        Folder folder = folderRepository.findByIdAndBuildingAndApartment(folderId, buildingId, apartment.getIdApartment())
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         log.debug("Récupération de {} sous-dossiers pour le dossier {} (ID: {})",
                 folder.getSubFolders().size(), folder.getName(), folderId);
 
         return folder.getSubFolders().stream()
+                .filter(subFolder -> subFolder.getIsShared() ||
+                        (subFolder.getApartment() != null && subFolder.getApartment().getIdApartment().equals(apartment.getIdApartment())))
                 .map(this::mapToFolderDto)
                 .collect(Collectors.toList());
     }
@@ -171,7 +192,12 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Folder folder = folderRepository.findByIdAndBuildingId(folderId, buildingId)
+        Apartment apartment = resident.getApartment();
+        if (apartment == null) {
+            throw new RuntimeException("Aucun appartement associé au résident");
+        }
+
+        Folder folder = folderRepository.findByIdAndBuildingAndApartment(folderId, buildingId, apartment.getIdApartment())
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         List<Document> documents = documentRepository.findByFolderIdOrderByCreatedAtDesc(folderId);
@@ -196,13 +222,13 @@ public class DocumentService {
         Building building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new RuntimeException("Immeuble non trouvé"));
 
-        Folder folder = folderRepository.findByIdAndBuildingId(folderId, buildingId)
-                .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
-
         Apartment apartment = resident.getApartment();
         if (apartment == null) {
             throw new RuntimeException("Aucun appartement associé au résident");
         }
+
+        Folder folder = folderRepository.findByIdAndBuildingAndApartment(folderId, buildingId, apartment.getIdApartment())
+                .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         if (!apartment.getBuilding().getBuildingId().equals(buildingId)) {
             throw new RuntimeException("Votre appartement n'appartient pas à l'immeuble sélectionné");
@@ -270,7 +296,12 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Folder folder = folderRepository.findByIdAndBuildingId(folderId, buildingId)
+        Apartment apartment = resident.getApartment();
+        if (apartment == null) {
+            throw new RuntimeException("Aucun appartement associé au résident");
+        }
+
+        Folder folder = folderRepository.findByIdAndBuildingAndApartment(folderId, buildingId, apartment.getIdApartment())
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         try {
@@ -302,6 +333,16 @@ public class DocumentService {
         Document document = documentRepository.findByIdAndBuildingId(documentId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Document non trouvé ou accès non autorisé"));
 
+        Apartment apartment = resident.getApartment();
+        if (apartment == null) {
+            throw new RuntimeException("Aucun appartement associé au résident");
+        }
+
+        if (!document.getFolder().getIsShared() &&
+            (document.getApartment() == null || !document.getApartment().getIdApartment().equals(apartment.getIdApartment()))) {
+            throw new RuntimeException("Accès non autorisé à ce document");
+        }
+
         try {
             Path filePath = Paths.get(baseDocumentsDir, document.getFilePath());
             if (Files.exists(filePath)) {
@@ -330,6 +371,16 @@ public class DocumentService {
         Document document = documentRepository.findByIdAndBuildingId(documentId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Document non trouvé ou accès non autorisé"));
 
+        Apartment apartment = resident.getApartment();
+        if (apartment == null) {
+            throw new RuntimeException("Aucun appartement associé au résident");
+        }
+
+        if (!document.getFolder().getIsShared() &&
+            (document.getApartment() == null || !document.getApartment().getIdApartment().equals(apartment.getIdApartment()))) {
+            throw new RuntimeException("Accès non autorisé à ce document");
+        }
+
         Path filePath = Paths.get(baseDocumentsDir, document.getFilePath());
         if (!Files.exists(filePath)) {
             log.error("Fichier physique non trouvé: {}", filePath.toAbsolutePath());
@@ -351,13 +402,18 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
+        Apartment apartment = resident.getApartment();
+        if (apartment == null) {
+            throw new RuntimeException("Aucun appartement associé au résident");
+        }
+
         if (query == null || query.trim().isEmpty()) {
             return List.of();
         }
 
-        List<Document> documents = documentRepository.searchDocuments(buildingId, query.trim());
-        log.debug("Recherche '{}' a retourné {} documents pour immeuble {}",
-                query, documents.size(), buildingId);
+        List<Document> documents = documentRepository.searchDocumentsByBuildingAndApartment(buildingId, apartment.getIdApartment(), query.trim());
+        log.debug("Recherche '{}' a retourné {} documents pour immeuble {} et appartement {}",
+                query, documents.size(), buildingId, apartment.getIdApartment());
 
         return documents.stream()
                 .map(this::mapToDocumentDto)
@@ -404,6 +460,7 @@ public class DocumentService {
                 .apartmentId(folder.getApartment() != null ? folder.getApartment().getIdApartment() : null)
                 .buildingId(folder.getBuilding() != null ? folder.getBuilding().getBuildingId() : null)
                 .createdBy(folder.getCreatedBy())
+                .isShared(folder.getIsShared())
                 .createdAt(folder.getCreatedAt())
                 .subFolderCount(folder.getSubFolders() != null ? folder.getSubFolders().size() : 0)
                 .documentCount(folder.getDocuments() != null ? folder.getDocuments().size() : 0)

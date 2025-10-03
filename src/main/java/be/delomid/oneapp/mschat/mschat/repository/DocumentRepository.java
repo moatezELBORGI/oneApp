@@ -26,6 +26,14 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     Optional<Document> findByIdAndBuildingId(@Param("id") Long id, @Param("buildingId") String buildingId);
 
     @Query("SELECT d FROM Document d WHERE d.building.buildingId = :buildingId " +
+           "AND (d.folder.isShared = true OR d.apartment.idApartment = :apartmentId) " +
+           "AND (LOWER(d.originalFilename) LIKE LOWER(CONCAT('%', :search, '%')) " +
+           "OR LOWER(d.description) LIKE LOWER(CONCAT('%', :search, '%')))")
+    List<Document> searchDocumentsByBuildingAndApartment(@Param("buildingId") String buildingId,
+                                                          @Param("apartmentId") String apartmentId,
+                                                          @Param("search") String search);
+
+    @Query("SELECT d FROM Document d WHERE d.building.buildingId = :buildingId " +
            "AND (LOWER(d.originalFilename) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "OR LOWER(d.description) LIKE LOWER(CONCAT('%', :search, '%')))")
     List<Document> searchDocuments(@Param("buildingId") String buildingId,
