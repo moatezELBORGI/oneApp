@@ -21,8 +21,12 @@ public class FolderDto {
     private String buildingId;
     private String createdBy;
     private Boolean isShared;
+    private String shareType;
     private LocalDateTime createdAt;
     private Integer subFolderCount;
     private Integer documentCount;
     private List<FolderDto> subFolders;
+    private List<FolderPermissionDto> permissions;
+    private Boolean canUpload;
+    private Boolean canRead;
 }

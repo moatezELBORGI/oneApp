@@ -56,6 +56,15 @@ public class Folder {
     @Column(name = "is_shared")
     private Boolean isShared = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "share_type", nullable = false)
+    @Builder.Default
+    private ShareType shareType = ShareType.PRIVATE;
+
+    @OneToMany(mappedBy = "folder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<FolderPermission> permissions = new ArrayList<>();
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

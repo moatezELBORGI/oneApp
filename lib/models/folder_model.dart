@@ -1,3 +1,5 @@
+import 'folder_permission_model.dart';
+
 class FolderModel {
   final int id;
   final String name;
@@ -7,9 +9,13 @@ class FolderModel {
   final String? buildingId;
   final String createdBy;
   final bool isShared;
+  final String shareType;
   final DateTime createdAt;
   final int subFolderCount;
   final int documentCount;
+  final List<FolderPermissionModel> permissions;
+  final bool canRead;
+  final bool canUpload;
 
   FolderModel({
     required this.id,
@@ -20,12 +26,23 @@ class FolderModel {
     this.buildingId,
     required this.createdBy,
     this.isShared = false,
+    this.shareType = 'PRIVATE',
     required this.createdAt,
     this.subFolderCount = 0,
     this.documentCount = 0,
+    this.permissions = const [],
+    this.canRead = true,
+    this.canUpload = false,
   });
 
   factory FolderModel.fromJson(Map<String, dynamic> json) {
+    List<FolderPermissionModel> permissionsList = [];
+    if (json['permissions'] != null) {
+      permissionsList = (json['permissions'] as List)
+          .map((p) => FolderPermissionModel.fromJson(p))
+          .toList();
+    }
+
     return FolderModel(
       id: json['id'],
       name: json['name'],
@@ -35,9 +52,13 @@ class FolderModel {
       buildingId: json['buildingId'],
       createdBy: json['createdBy'],
       isShared: json['isShared'] ?? false,
+      shareType: json['shareType'] ?? 'PRIVATE',
       createdAt: DateTime.parse(json['createdAt']),
       subFolderCount: json['subFolderCount'] ?? 0,
       documentCount: json['documentCount'] ?? 0,
+      permissions: permissionsList,
+      canRead: json['canRead'] ?? true,
+      canUpload: json['canUpload'] ?? false,
     );
   }
 
@@ -51,9 +72,13 @@ class FolderModel {
       'buildingId': buildingId,
       'createdBy': createdBy,
       'isShared': isShared,
+      'shareType': shareType,
       'createdAt': createdAt.toIso8601String(),
       'subFolderCount': subFolderCount,
       'documentCount': documentCount,
+      'permissions': permissions.map((p) => p.toJson()).toList(),
+      'canRead': canRead,
+      'canUpload': canUpload,
     };
   }
 }

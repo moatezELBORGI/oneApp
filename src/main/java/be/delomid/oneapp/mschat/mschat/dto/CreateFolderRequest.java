@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,4 +19,12 @@ public class CreateFolderRequest {
     private String description;
 
     private Boolean isShared;
+
+    private String shareType;
+
+    private List<String> sharedApartmentIds;
+
+    private List<String> sharedResidentIds;
+
+    private Boolean allowUpload;
 }

@@ -56,4 +56,22 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
 
     @Query("SELECT CASE WHEN COUNT(f) > 0 THEN true ELSE false END FROM Folder f WHERE f.name = :name AND f.parentFolder IS NULL AND f.apartment.idApartment = :apartmentId")
     boolean existsByNameAndParentFolderIsNullAndApartmentId(@Param("name") String name, @Param("apartmentId") String apartmentId);
+
+    @Query("SELECT DISTINCT f FROM Folder f LEFT JOIN f.permissions p " +
+           "WHERE f.building.buildingId = :buildingId AND f.parentFolder IS NULL " +
+           "AND (f.shareType = 'ALL_APARTMENTS' " +
+           "OR (f.shareType = 'PRIVATE' AND f.apartment.idApartment = :apartmentId) " +
+           "OR (f.shareType = 'SPECIFIC_APARTMENTS' AND (p.apartment.idApartment = :apartmentId OR p.resident.idUsers = :residentId)) " +
+           "OR f.createdBy = :residentId)")
+    List<Folder> findAccessibleRootFolders(@Param("buildingId") String buildingId,
+                                           @Param("apartmentId") String apartmentId,
+                                           @Param("residentId") String residentId);
+
+    @Query("SELECT DISTINCT f FROM Folder f LEFT JOIN f.permissions p " +
+           "WHERE f.building.buildingId = :buildingId " +
+           "AND (f.shareType = 'ALL_APARTMENTS' " +
+           "OR f.createdBy = :residentId " +
+           "OR (f.shareType = 'SPECIFIC_APARTMENTS' AND p.resident.idUsers = :residentId))")
+    List<Folder> findAccessibleFoldersForAdminWithoutApartment(@Param("buildingId") String buildingId,
+                                                                @Param("residentId") String residentId);
 }

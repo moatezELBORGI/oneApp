@@ -3,18 +3,9 @@ package be.delomid.oneapp.mschat.mschat.service;
 import be.delomid.oneapp.mschat.mschat.dto.CreateFolderRequest;
 import be.delomid.oneapp.mschat.mschat.dto.DocumentDto;
 import be.delomid.oneapp.mschat.mschat.dto.FolderDto;
-import be.delomid.oneapp.mschat.mschat.model.Apartment;
-import be.delomid.oneapp.mschat.mschat.model.Building;
-import be.delomid.oneapp.mschat.mschat.model.Document;
-import be.delomid.oneapp.mschat.mschat.model.Folder;
-import be.delomid.oneapp.mschat.mschat.model.Resident;
-import be.delomid.oneapp.mschat.mschat.model.ResidentBuilding;
-import be.delomid.oneapp.mschat.mschat.repository.ApartmentRepository;
-import be.delomid.oneapp.mschat.mschat.repository.BuildingRepository;
-import be.delomid.oneapp.mschat.mschat.repository.DocumentRepository;
-import be.delomid.oneapp.mschat.mschat.repository.FolderRepository;
-import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
-import be.delomid.oneapp.mschat.mschat.repository.ResidentBuildingRepository;
+import be.delomid.oneapp.mschat.mschat.dto.FolderPermissionDto;
+import be.delomid.oneapp.mschat.mschat.model.*;
+import be.delomid.oneapp.mschat.mschat.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +33,7 @@ public class DocumentService {
     private final ResidentRepository residentRepository;
     private final BuildingRepository buildingRepository;
     private final ResidentBuildingRepository residentBuildingRepository;
+    private final FolderPermissionRepository folderPermissionRepository;
 
     @Value("${app.documents.base-dir:documents}")
     private String baseDocumentsDir;
@@ -62,13 +54,20 @@ public class DocumentService {
         Building building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new RuntimeException("Immeuble non trouvé"));
 
+        String userRole = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentUserRole();
+        boolean isAdmin = "ADMIN".equals(userRole) || "SYNDIC".equals(userRole);
+
         ResidentBuilding residentBuilding = residentBuildingRepository
                 .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
-                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
+                .orElse(null);
 
-        Apartment apartment = residentBuilding.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
+        Apartment apartment = null;
+        if (residentBuilding != null) {
+            apartment = residentBuilding.getApartment();
+        }
+
+        if (!isAdmin && apartment == null) {
+            throw new RuntimeException("Vous devez être admin ou avoir un appartement pour créer un dossier");
         }
 
         String cleanName = request.getName().trim();
@@ -76,9 +75,24 @@ public class DocumentService {
             throw new RuntimeException("Le nom du dossier ne peut pas être vide");
         }
 
+        ShareType shareType = ShareType.PRIVATE;
+        if (request.getShareType() != null) {
+            try {
+                shareType = ShareType.valueOf(request.getShareType().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Type de partage invalide");
+            }
+        } else if (request.getIsShared() != null && request.getIsShared()) {
+            shareType = ShareType.ALL_APARTMENTS;
+        }
+
+        if (shareType != ShareType.PRIVATE && !isAdmin && apartment != null) {
+            shareType = ShareType.PRIVATE;
+        }
+
         if (request.getParentFolderId() != null) {
-            Folder parentFolder = folderRepository.findByIdAndBuildingAndApartment(
-                    request.getParentFolderId(), buildingId, apartment.getIdApartment())
+            Folder parentFolder = folderRepository.findByIdAndBuildingId(
+                    request.getParentFolderId(), buildingId)
                     .orElseThrow(() -> new RuntimeException("Dossier parent non trouvé"));
 
             if (folderRepository.existsByNameAndParentFolderIdAndBuildingId(
@@ -92,7 +106,8 @@ public class DocumentService {
             }
         }
 
-        String folderPath = buildFolderPath(apartment.getIdApartment(), request.getParentFolderId(), cleanName);
+        String apartmentIdForPath = apartment != null ? apartment.getIdApartment() : "building_" + buildingId;
+        String folderPath = buildFolderPath(apartmentIdForPath, request.getParentFolderId(), cleanName);
 
         try {
             Path physicalPath = Paths.get(baseDocumentsDir, folderPath);
@@ -109,13 +124,7 @@ public class DocumentService {
                     .orElse(null);
         }
 
-        boolean isShared = request.getIsShared() != null ? request.getIsShared() : false;
-        String userRole = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentUserRole();
-        boolean isAdmin = "ADMIN".equals(userRole) || "SYNDIC".equals(userRole);
-
-        if (isShared && !isAdmin) {
-            throw new RuntimeException("Seuls les administrateurs peuvent créer des dossiers partagés");
-        }
+        boolean isShared = shareType != ShareType.PRIVATE;
 
         Folder folder = Folder.builder()
                 .name(cleanName)
@@ -125,13 +134,51 @@ public class DocumentService {
                 .building(building)
                 .createdBy(resident.getIdUsers())
                 .isShared(isShared)
+                .shareType(shareType)
                 .build();
 
         folder = folderRepository.save(folder);
-        log.info("Dossier créé en base de données: {} (ID: {}) pour appartement: {} (immeuble: {}) - Partagé: {}",
-                folder.getName(), folder.getId(), apartment.getIdApartment(), buildingId, isShared);
 
-        return mapToFolderDto(folder);
+        if (shareType == ShareType.SPECIFIC_APARTMENTS) {
+            boolean allowUpload = request.getAllowUpload() != null ? request.getAllowUpload() : false;
+
+            if (request.getSharedApartmentIds() != null && !request.getSharedApartmentIds().isEmpty()) {
+                for (String apartmentId : request.getSharedApartmentIds()) {
+                    Apartment sharedApartment = apartmentRepository.findById(apartmentId)
+                            .orElse(null);
+                    if (sharedApartment != null) {
+                        FolderPermission permission = FolderPermission.builder()
+                                .folder(folder)
+                                .apartment(sharedApartment)
+                                .canRead(true)
+                                .canUpload(allowUpload)
+                                .build();
+                        folderPermissionRepository.save(permission);
+                    }
+                }
+            }
+
+            if (request.getSharedResidentIds() != null && !request.getSharedResidentIds().isEmpty()) {
+                for (String residentId : request.getSharedResidentIds()) {
+                    Resident sharedResident = residentRepository.findById(residentId)
+                            .orElse(null);
+                    if (sharedResident != null) {
+                        FolderPermission permission = FolderPermission.builder()
+                                .folder(folder)
+                                .resident(sharedResident)
+                                .canRead(true)
+                                .canUpload(allowUpload)
+                                .build();
+                        folderPermissionRepository.save(permission);
+                    }
+                }
+            }
+        }
+
+        log.info("Dossier créé: {} (ID: {}) - Type: {} - Immeuble: {}",
+                folder.getName(), folder.getId(), shareType, buildingId);
+
+        return mapToFolderDto(folder, resident.getIdUsers(), apartment != null ? apartment.getIdApartment() : null);
     }
 
     @Transactional(readOnly = true)
@@ -146,18 +193,24 @@ public class DocumentService {
 
         ResidentBuilding residentBuilding = residentBuildingRepository
                 .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
-                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
+                .orElse(null);
 
-        Apartment apartment = residentBuilding.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
+        List<Folder> folders;
+        String apartmentId = null;
+
+        if (residentBuilding != null && residentBuilding.getApartment() != null) {
+            apartmentId = residentBuilding.getApartment().getIdApartment();
+            folders = folderRepository.findAccessibleRootFolders(buildingId, apartmentId, resident.getIdUsers());
+        } else {
+            folders = folderRepository.findAccessibleFoldersForAdminWithoutApartment(buildingId, resident.getIdUsers());
         }
 
-        List<Folder> folders = folderRepository.findRootFoldersByBuildingAndApartment(buildingId, apartment.getIdApartment());
-        log.debug("Récupération de {} dossiers racine pour l'immeuble {} et appartement {}", folders.size(), buildingId, apartment.getIdApartment());
+        log.debug("Récupération de {} dossiers racine accessibles pour l'immeuble {}", folders.size(), buildingId);
 
+        String finalApartmentId = apartmentId;
         return folders.stream()
-                .map(this::mapToFolderDto)
+                .filter(f -> f.getParentFolder() == null)
+                .map(f -> mapToFolderDto(f, resident.getIdUsers(), finalApartmentId))
                 .collect(Collectors.toList());
     }
 
@@ -483,6 +536,23 @@ public class DocumentService {
     }
 
     private FolderDto mapToFolderDto(Folder folder) {
+        return mapToFolderDto(folder, null, null);
+    }
+
+    private FolderDto mapToFolderDto(Folder folder, String residentId, String apartmentId) {
+        boolean canRead = checkFolderReadPermission(folder, residentId, apartmentId);
+        boolean canUpload = checkFolderUploadPermission(folder, residentId, apartmentId);
+
+        List<FolderPermissionDto> permissionDtos = folder.getPermissions().stream()
+                .map(p -> FolderPermissionDto.builder()
+                        .id(p.getId())
+                        .apartmentId(p.getApartment() != null ? p.getApartment().getIdApartment() : null)
+                        .residentId(p.getResident() != null ? p.getResident().getIdUsers() : null)
+                        .canRead(p.getCanRead())
+                        .canUpload(p.getCanUpload())
+                        .build())
+                .collect(Collectors.toList());
+
         return FolderDto.builder()
                 .id(folder.getId())
                 .name(folder.getName())
@@ -492,10 +562,59 @@ public class DocumentService {
                 .buildingId(folder.getBuilding() != null ? folder.getBuilding().getBuildingId() : null)
                 .createdBy(folder.getCreatedBy())
                 .isShared(folder.getIsShared())
+                .shareType(folder.getShareType().name())
                 .createdAt(folder.getCreatedAt())
                 .subFolderCount(folder.getSubFolders() != null ? folder.getSubFolders().size() : 0)
                 .documentCount(folder.getDocuments() != null ? folder.getDocuments().size() : 0)
+                .permissions(permissionDtos)
+                .canRead(canRead)
+                .canUpload(canUpload)
                 .build();
+    }
+
+    private boolean checkFolderReadPermission(Folder folder, String residentId, String apartmentId) {
+        if (folder.getCreatedBy().equals(residentId)) {
+            return true;
+        }
+
+        if (folder.getShareType() == ShareType.ALL_APARTMENTS) {
+            return true;
+        }
+
+        if (folder.getShareType() == ShareType.PRIVATE) {
+            return folder.getApartment() != null && folder.getApartment().getIdApartment().equals(apartmentId);
+        }
+
+        if (folder.getShareType() == ShareType.SPECIFIC_APARTMENTS) {
+            return folder.getPermissions().stream()
+                    .anyMatch(p -> (p.getResident() != null && p.getResident().getIdUsers().equals(residentId)) ||
+                                   (p.getApartment() != null && apartmentId != null && p.getApartment().getIdApartment().equals(apartmentId)));
+        }
+
+        return false;
+    }
+
+    private boolean checkFolderUploadPermission(Folder folder, String residentId, String apartmentId) {
+        if (folder.getCreatedBy().equals(residentId)) {
+            return true;
+        }
+
+        if (folder.getShareType() == ShareType.ALL_APARTMENTS) {
+            return true;
+        }
+
+        if (folder.getShareType() == ShareType.PRIVATE) {
+            return folder.getApartment() != null && folder.getApartment().getIdApartment().equals(apartmentId);
+        }
+
+        if (folder.getShareType() == ShareType.SPECIFIC_APARTMENTS) {
+            return folder.getPermissions().stream()
+                    .anyMatch(p -> p.getCanUpload() &&
+                            ((p.getResident() != null && p.getResident().getIdUsers().equals(residentId)) ||
+                             (p.getApartment() != null && apartmentId != null && p.getApartment().getIdApartment().equals(apartmentId))));
+        }
+
+        return false;
     }
 
     private DocumentDto mapToDocumentDto(Document document) {
