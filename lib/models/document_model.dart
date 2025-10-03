@@ -7,7 +7,8 @@ class DocumentModel {
   final String? mimeType;
   final String? fileExtension;
   final int folderId;
-  final String apartmentId;
+  final String? apartmentId;
+  final String? buildingId;
   final String uploadedBy;
   final String? description;
   final DateTime createdAt;
@@ -24,7 +25,8 @@ class DocumentModel {
     this.mimeType,
     this.fileExtension,
     required this.folderId,
-    required this.apartmentId,
+    this.apartmentId,
+    this.buildingId,
     required this.uploadedBy,
     this.description,
     required this.createdAt,
@@ -44,6 +46,7 @@ class DocumentModel {
       fileExtension: json['fileExtension'],
       folderId: json['folderId'],
       apartmentId: json['apartmentId'],
+      buildingId: json['buildingId'],
       uploadedBy: json['uploadedBy'],
       description: json['description'],
       createdAt: DateTime.parse(json['createdAt']),
@@ -64,6 +67,7 @@ class DocumentModel {
       'fileExtension': fileExtension,
       'folderId': folderId,
       'apartmentId': apartmentId,
+      'buildingId': buildingId,
       'uploadedBy': uploadedBy,
       'description': description,
       'createdAt': createdAt.toIso8601String(),

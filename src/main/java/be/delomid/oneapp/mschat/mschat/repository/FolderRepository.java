@@ -12,10 +12,20 @@ import java.util.Optional;
 @Repository
 public interface FolderRepository extends JpaRepository<Folder, Long> {
 
+    @Query("SELECT f FROM Folder f WHERE f.building.buildingId = :buildingId AND f.parentFolder IS NULL")
+    List<Folder> findByBuildingIdAndParentFolderIsNull(@Param("buildingId") String buildingId);
+
     @Query("SELECT f FROM Folder f WHERE f.apartment.idApartment = :apartmentId AND f.parentFolder IS NULL")
     List<Folder> findByApartmentIdAndParentFolderIsNull(@Param("apartmentId") String apartmentId);
 
     List<Folder> findByParentFolderId(Long parentFolderId);
+
+    @Query("SELECT f FROM Folder f WHERE f.building.buildingId = :buildingId AND f.parentFolder.id = :parentId")
+    List<Folder> findByBuildingIdAndParentFolderId(@Param("buildingId") String buildingId,
+                                                     @Param("parentId") Long parentId);
+
+    @Query("SELECT f FROM Folder f WHERE f.id = :id AND f.building.buildingId = :buildingId")
+    Optional<Folder> findByIdAndBuildingId(@Param("id") Long id, @Param("buildingId") String buildingId);
 
     @Query("SELECT f FROM Folder f WHERE f.apartment.idApartment = :apartmentId AND f.parentFolder.id = :parentId")
     List<Folder> findByApartmentIdAndParentFolderId(@Param("apartmentId") String apartmentId,
@@ -23,6 +33,12 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
 
     @Query("SELECT f FROM Folder f WHERE f.id = :id AND f.apartment.idApartment = :apartmentId")
     Optional<Folder> findByIdAndApartmentId(@Param("id") Long id, @Param("apartmentId") String apartmentId);
+
+    @Query("SELECT CASE WHEN COUNT(f) > 0 THEN true ELSE false END FROM Folder f WHERE f.name = :name AND f.parentFolder.id = :parentFolderId AND f.building.buildingId = :buildingId")
+    boolean existsByNameAndParentFolderIdAndBuildingId(@Param("name") String name, @Param("parentFolderId") Long parentFolderId, @Param("buildingId") String buildingId);
+
+    @Query("SELECT CASE WHEN COUNT(f) > 0 THEN true ELSE false END FROM Folder f WHERE f.name = :name AND f.parentFolder IS NULL AND f.building.buildingId = :buildingId")
+    boolean existsByNameAndParentFolderIsNullAndBuildingId(@Param("name") String name, @Param("buildingId") String buildingId);
 
     @Query("SELECT CASE WHEN COUNT(f) > 0 THEN true ELSE false END FROM Folder f WHERE f.name = :name AND f.parentFolder.id = :parentFolderId AND f.apartment.idApartment = :apartmentId")
     boolean existsByNameAndParentFolderIdAndApartmentId(@Param("name") String name, @Param("parentFolderId") Long parentFolderId, @Param("apartmentId") String apartmentId);

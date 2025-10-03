@@ -4,10 +4,12 @@ import be.delomid.oneapp.mschat.mschat.dto.CreateFolderRequest;
 import be.delomid.oneapp.mschat.mschat.dto.DocumentDto;
 import be.delomid.oneapp.mschat.mschat.dto.FolderDto;
 import be.delomid.oneapp.mschat.mschat.model.Apartment;
+import be.delomid.oneapp.mschat.mschat.model.Building;
 import be.delomid.oneapp.mschat.mschat.model.Document;
 import be.delomid.oneapp.mschat.mschat.model.Folder;
 import be.delomid.oneapp.mschat.mschat.model.Resident;
 import be.delomid.oneapp.mschat.mschat.repository.ApartmentRepository;
+import be.delomid.oneapp.mschat.mschat.repository.BuildingRepository;
 import be.delomid.oneapp.mschat.mschat.repository.DocumentRepository;
 import be.delomid.oneapp.mschat.mschat.repository.FolderRepository;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
@@ -36,6 +38,7 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final ApartmentRepository apartmentRepository;
     private final ResidentRepository residentRepository;
+    private final BuildingRepository buildingRepository;
 
     @Value("${app.documents.base-dir:documents}")
     private String baseDocumentsDir;
@@ -48,10 +51,15 @@ public class DocumentService {
         Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
-        Apartment apartment = resident.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+        String buildingId = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentBuildingId();
+        if (buildingId == null) {
+            throw new RuntimeException("Aucun immeuble sélectionné");
         }
+
+        Building building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new RuntimeException("Immeuble non trouvé"));
+
+        Apartment apartment = resident.getApartment();
 
         String cleanName = request.getName().trim();
         if (cleanName.isEmpty()) {
@@ -59,22 +67,22 @@ public class DocumentService {
         }
 
         if (request.getParentFolderId() != null) {
-            Folder parentFolder = folderRepository.findByIdAndApartmentId(
-                    request.getParentFolderId(), apartment.getIdApartment())
+            Folder parentFolder = folderRepository.findByIdAndBuildingId(
+                    request.getParentFolderId(), buildingId)
                     .orElseThrow(() -> new RuntimeException("Dossier parent non trouvé"));
 
-            if (folderRepository.existsByNameAndParentFolderIdAndApartmentId(
-                    cleanName, request.getParentFolderId(), apartment.getIdApartment())) {
+            if (folderRepository.existsByNameAndParentFolderIdAndBuildingId(
+                    cleanName, request.getParentFolderId(), buildingId)) {
                 throw new RuntimeException("Un dossier avec ce nom existe déjà à cet emplacement");
             }
         } else {
-            if (folderRepository.existsByNameAndParentFolderIsNullAndApartmentId(
-                    cleanName, apartment.getIdApartment())) {
+            if (folderRepository.existsByNameAndParentFolderIsNullAndBuildingId(
+                    cleanName, buildingId)) {
                 throw new RuntimeException("Un dossier avec ce nom existe déjà à la racine");
             }
         }
 
-        String folderPath = buildFolderPath(apartment.getIdApartment(), request.getParentFolderId(), cleanName);
+        String folderPath = buildFolderPath(buildingId, request.getParentFolderId(), cleanName);
 
         try {
             Path physicalPath = Paths.get(baseDocumentsDir, folderPath);
@@ -96,11 +104,12 @@ public class DocumentService {
                 .folderPath(folderPath)
                 .parentFolder(parentFolder)
                 .apartment(apartment)
+                .building(building)
                 .createdBy(resident.getIdUsers())
                 .build();
 
         folder = folderRepository.save(folder);
-        log.info("Dossier créé en base de données: {} (ID: {}) pour appartement: {}", folder.getName(), folder.getId(), apartment.getIdApartment());
+        log.info("Dossier créé en base de données: {} (ID: {}) pour immeuble: {}", folder.getName(), folder.getId(), buildingId);
 
         return mapToFolderDto(folder);
     }
@@ -110,32 +119,35 @@ public class DocumentService {
         Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
-        Apartment apartment = resident.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+        String buildingId = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentBuildingId();
+        if (buildingId == null) {
+            throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        ensureApartmentRootFolderExists(apartment);
+        Building building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new RuntimeException("Immeuble non trouvé"));
 
-        List<Folder> folders = folderRepository.findByApartmentIdAndParentFolderIsNull(apartment.getIdApartment());
-        log.debug("Récupération de {} dossiers racine pour l'appartement {}", folders.size(), apartment.getIdApartment());
+        ensureBuildingRootFolderExists(building);
+
+        List<Folder> folders = folderRepository.findByBuildingIdAndParentFolderIsNull(buildingId);
+        log.debug("Récupération de {} dossiers racine pour l'immeuble {}", folders.size(), buildingId);
 
         return folders.stream()
                 .map(this::mapToFolderDto)
                 .collect(Collectors.toList());
     }
 
-    private void ensureApartmentRootFolderExists(Apartment apartment) {
+    private void ensureBuildingRootFolderExists(Building building) {
         try {
-            String apartmentFolderPath = "apartment_" + apartment.getIdApartment();
-            Path physicalPath = Paths.get(baseDocumentsDir, apartmentFolderPath);
+            String buildingFolderPath = "building_" + building.getBuildingId();
+            Path physicalPath = Paths.get(baseDocumentsDir, buildingFolderPath);
 
             if (!Files.exists(physicalPath)) {
                 Files.createDirectories(physicalPath);
-                log.info("Dossier racine créé pour l'appartement {}: {}", apartment.getIdApartment(), physicalPath.toAbsolutePath());
+                log.info("Dossier racine créé pour l'immeuble {}: {}", building.getBuildingId(), physicalPath.toAbsolutePath());
             }
         } catch (IOException e) {
-            log.error("Erreur lors de la création du dossier racine de l'appartement {}", apartment.getIdApartment(), e);
+            log.error("Erreur lors de la création du dossier racine de l'immeuble {}", building.getBuildingId(), e);
         }
     }
 
@@ -144,12 +156,12 @@ public class DocumentService {
         Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
-        Apartment apartment = resident.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+        String buildingId = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentBuildingId();
+        if (buildingId == null) {
+            throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getIdApartment())
+        Folder folder = folderRepository.findByIdAndBuildingId(folderId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         log.debug("Récupération de {} sous-dossiers pour le dossier {} (ID: {})",
@@ -165,12 +177,12 @@ public class DocumentService {
         Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
-        Apartment apartment = resident.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+        String buildingId = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentBuildingId();
+        if (buildingId == null) {
+            throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getIdApartment())
+        Folder folder = folderRepository.findByIdAndBuildingId(folderId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         List<Document> documents = documentRepository.findByFolderIdOrderByCreatedAtDesc(folderId);
@@ -187,13 +199,18 @@ public class DocumentService {
         Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
-        Apartment apartment = resident.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+        String buildingId = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentBuildingId();
+        if (buildingId == null) {
+            throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getIdApartment())
+        Building building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new RuntimeException("Immeuble non trouvé"));
+
+        Folder folder = folderRepository.findByIdAndBuildingId(folderId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
+
+        Apartment apartment = resident.getApartment();
 
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Le fichier est vide");
@@ -230,13 +247,14 @@ public class DocumentService {
                     .fileExtension(fileExtension)
                     .folder(folder)
                     .apartment(apartment)
+                    .building(building)
                     .uploadedBy(resident.getIdUsers())
                     .description(description != null ? description.trim() : null)
                     .build();
 
             document = documentRepository.save(document);
-            log.info("Document uploadé: {} (ID: {}) dans le dossier: {} pour appartement: {}",
-                    originalFilename, document.getId(), folder.getName(), apartment.getIdApartment());
+            log.info("Document uploadé: {} (ID: {}) dans le dossier: {} pour immeuble: {}",
+                    originalFilename, document.getId(), folder.getName(), buildingId);
 
             return mapToDocumentDto(document);
 
@@ -251,12 +269,12 @@ public class DocumentService {
         Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
-        Apartment apartment = resident.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+        String buildingId = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentBuildingId();
+        if (buildingId == null) {
+            throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Folder folder = folderRepository.findByIdAndApartmentId(folderId, apartment.getIdApartment())
+        Folder folder = folderRepository.findByIdAndBuildingId(folderId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         try {
@@ -267,7 +285,7 @@ public class DocumentService {
             }
 
             folderRepository.delete(folder);
-            log.info("Dossier supprimé: {} (ID: {}) pour appartement: {}", folder.getName(), folderId, apartment.getIdApartment());
+            log.info("Dossier supprimé: {} (ID: {}) pour immeuble: {}", folder.getName(), folderId, buildingId);
 
         } catch (IOException e) {
             log.error("Erreur lors de la suppression du dossier: {}", e.getMessage(), e);
@@ -280,12 +298,12 @@ public class DocumentService {
         Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
-        Apartment apartment = resident.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+        String buildingId = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentBuildingId();
+        if (buildingId == null) {
+            throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Document document = documentRepository.findByIdAndApartmentId(documentId, apartment.getIdApartment())
+        Document document = documentRepository.findByIdAndBuildingId(documentId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Document non trouvé ou accès non autorisé"));
 
         try {
@@ -296,7 +314,7 @@ public class DocumentService {
             }
 
             documentRepository.delete(document);
-            log.info("Document supprimé: {} (ID: {}) pour appartement: {}", document.getOriginalFilename(), documentId, apartment.getIdApartment());
+            log.info("Document supprimé: {} (ID: {}) pour immeuble: {}", document.getOriginalFilename(), documentId, buildingId);
 
         } catch (IOException e) {
             log.error("Erreur lors de la suppression du document: {}", e.getMessage(), e);
@@ -308,12 +326,12 @@ public class DocumentService {
         Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
-        Apartment apartment = resident.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+        String buildingId = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentBuildingId();
+        if (buildingId == null) {
+            throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Document document = documentRepository.findByIdAndApartmentId(documentId, apartment.getIdApartment())
+        Document document = documentRepository.findByIdAndBuildingId(documentId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Document non trouvé ou accès non autorisé"));
 
         Path filePath = Paths.get(baseDocumentsDir, document.getFilePath());
@@ -322,8 +340,8 @@ public class DocumentService {
             throw new RuntimeException("Fichier non trouvé sur le système de fichiers");
         }
 
-        log.info("Téléchargement du document: {} (ID: {}) pour appartement: {}",
-                document.getOriginalFilename(), documentId, apartment.getIdApartment());
+        log.info("Téléchargement du document: {} (ID: {}) pour immeuble: {}",
+                document.getOriginalFilename(), documentId, buildingId);
         return Files.readAllBytes(filePath);
     }
 
@@ -332,31 +350,31 @@ public class DocumentService {
         Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
-        Apartment apartment = resident.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+        String buildingId = be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil.getCurrentBuildingId();
+        if (buildingId == null) {
+            throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
         if (query == null || query.trim().isEmpty()) {
             return List.of();
         }
 
-        List<Document> documents = documentRepository.searchDocuments(apartment.getIdApartment(), query.trim());
-        log.debug("Recherche '{}' a retourné {} documents pour appartement {}",
-                query, documents.size(), apartment.getIdApartment());
+        List<Document> documents = documentRepository.searchDocuments(buildingId, query.trim());
+        log.debug("Recherche '{}' a retourné {} documents pour immeuble {}",
+                query, documents.size(), buildingId);
 
         return documents.stream()
                 .map(this::mapToDocumentDto)
                 .collect(Collectors.toList());
     }
 
-    private String buildFolderPath(String apartmentId, Long parentFolderId, String folderName) {
+    private String buildFolderPath(String buildingId, Long parentFolderId, String folderName) {
         if (parentFolderId != null) {
             Folder parentFolder = folderRepository.findById(parentFolderId)
                     .orElseThrow(() -> new RuntimeException("Parent folder not found"));
             return Paths.get(parentFolder.getFolderPath(), folderName).toString();
         }
-        return Paths.get("apartment_" + apartmentId, folderName).toString();
+        return Paths.get("building_" + buildingId, folderName).toString();
     }
 
     private void deleteDirectoryRecursively(Path path) throws IOException {
@@ -387,7 +405,8 @@ public class DocumentService {
                 .name(folder.getName())
                 .folderPath(folder.getFolderPath())
                 .parentFolderId(folder.getParentFolder() != null ? folder.getParentFolder().getId() : null)
-                .apartmentId(folder.getApartment().getIdApartment())
+                .apartmentId(folder.getApartment() != null ? folder.getApartment().getIdApartment() : null)
+                .buildingId(folder.getBuilding() != null ? folder.getBuilding().getBuildingId() : null)
                 .createdBy(folder.getCreatedBy())
                 .createdAt(folder.getCreatedAt())
                 .subFolderCount(folder.getSubFolders() != null ? folder.getSubFolders().size() : 0)
@@ -406,7 +425,8 @@ public class DocumentService {
                 .mimeType(document.getMimeType())
                 .fileExtension(document.getFileExtension())
                 .folderId(document.getFolder().getId())
-                .apartmentId(document.getApartment().getIdApartment())
+                .apartmentId(document.getApartment() != null ? document.getApartment().getIdApartment() : null)
+                .buildingId(document.getBuilding() != null ? document.getBuilding().getBuildingId() : null)
                 .uploadedBy(document.getUploadedBy())
                 .description(document.getDescription())
                 .createdAt(document.getCreatedAt())

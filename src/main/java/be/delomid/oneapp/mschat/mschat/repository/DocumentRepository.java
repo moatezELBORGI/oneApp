@@ -16,6 +16,21 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     List<Document> findByFolderId(Long folderId);
 
+    @Query("SELECT d FROM Document d WHERE d.building.buildingId = :buildingId")
+    List<Document> findByBuildingId(@Param("buildingId") String buildingId);
+
+    @Query("SELECT d FROM Document d WHERE d.building.buildingId = :buildingId")
+    Page<Document> findByBuildingId(@Param("buildingId") String buildingId, Pageable pageable);
+
+    @Query("SELECT d FROM Document d WHERE d.id = :id AND d.building.buildingId = :buildingId")
+    Optional<Document> findByIdAndBuildingId(@Param("id") Long id, @Param("buildingId") String buildingId);
+
+    @Query("SELECT d FROM Document d WHERE d.building.buildingId = :buildingId " +
+           "AND (LOWER(d.originalFilename) LIKE LOWER(CONCAT('%', :search, '%')) " +
+           "OR LOWER(d.description) LIKE LOWER(CONCAT('%', :search, '%')))")
+    List<Document> searchDocuments(@Param("buildingId") String buildingId,
+                                   @Param("search") String search);
+
     @Query("SELECT d FROM Document d WHERE d.apartment.idApartment = :apartmentId")
     List<Document> findByApartmentId(@Param("apartmentId") String apartmentId);
 
@@ -24,12 +39,6 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     @Query("SELECT d FROM Document d WHERE d.id = :id AND d.apartment.idApartment = :apartmentId")
     Optional<Document> findByIdAndApartmentId(@Param("id") Long id, @Param("apartmentId") String apartmentId);
-
-    @Query("SELECT d FROM Document d WHERE d.apartment.idApartment = :apartmentId " +
-           "AND (LOWER(d.originalFilename) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "OR LOWER(d.description) LIKE LOWER(CONCAT('%', :search, '%')))")
-    List<Document> searchDocuments(@Param("apartmentId") String apartmentId,
-                                   @Param("search") String search);
 
     List<Document> findByFolderIdOrderByCreatedAtDesc(Long folderId);
 

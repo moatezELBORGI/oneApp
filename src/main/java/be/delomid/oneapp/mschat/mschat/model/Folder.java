@@ -42,8 +42,12 @@ public class Folder {
     private List<Document> documents = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "apartment_id", nullable = false)
+    @JoinColumn(name = "apartment_id")
     private Apartment apartment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "building_id", nullable = false)
+    private Building building;
 
     @Column(name = "created_by", nullable = false)
     private String createdBy;

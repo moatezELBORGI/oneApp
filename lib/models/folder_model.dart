@@ -3,7 +3,8 @@ class FolderModel {
   final String name;
   final String folderPath;
   final int? parentFolderId;
-  final String apartmentId;
+  final String? apartmentId;
+  final String? buildingId;
   final String createdBy;
   final DateTime createdAt;
   final int subFolderCount;
@@ -14,7 +15,8 @@ class FolderModel {
     required this.name,
     required this.folderPath,
     this.parentFolderId,
-    required this.apartmentId,
+    this.apartmentId,
+    this.buildingId,
     required this.createdBy,
     required this.createdAt,
     this.subFolderCount = 0,
@@ -28,6 +30,7 @@ class FolderModel {
       folderPath: json['folderPath'],
       parentFolderId: json['parentFolderId'],
       apartmentId: json['apartmentId'],
+      buildingId: json['buildingId'],
       createdBy: json['createdBy'],
       createdAt: DateTime.parse(json['createdAt']),
       subFolderCount: json['subFolderCount'] ?? 0,
@@ -42,6 +45,7 @@ class FolderModel {
       'folderPath': folderPath,
       'parentFolderId': parentFolderId,
       'apartmentId': apartmentId,
+      'buildingId': buildingId,
       'createdBy': createdBy,
       'createdAt': createdAt.toIso8601String(),
       'subFolderCount': subFolderCount,

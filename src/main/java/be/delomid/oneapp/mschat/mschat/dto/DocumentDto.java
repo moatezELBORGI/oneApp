@@ -21,6 +21,7 @@ public class DocumentDto {
     private String fileExtension;
     private Long folderId;
     private String apartmentId;
+    private String buildingId;
     private String uploadedBy;
     private String description;
     private LocalDateTime createdAt;

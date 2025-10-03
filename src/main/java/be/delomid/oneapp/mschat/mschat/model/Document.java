@@ -45,8 +45,12 @@ public class Document {
     private Folder folder;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "apartment_id", nullable = false)
+    @JoinColumn(name = "apartment_id")
     private Apartment apartment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "building_id", nullable = false)
+    private Building building;
 
     @Column(name = "uploaded_by", nullable = false)
     private String uploadedBy;
