@@ -60,6 +60,13 @@ public class DocumentService {
                 .orElseThrow(() -> new RuntimeException("Immeuble non trouvé"));
 
         Apartment apartment = resident.getApartment();
+        if (apartment == null) {
+            throw new RuntimeException("Aucun appartement associé au résident");
+        }
+
+        if (!apartment.getBuilding().getBuildingId().equals(buildingId)) {
+            throw new RuntimeException("Votre appartement n'appartient pas à l'immeuble sélectionné");
+        }
 
         String cleanName = request.getName().trim();
         if (cleanName.isEmpty()) {
@@ -82,7 +89,7 @@ public class DocumentService {
             }
         }
 
-        String folderPath = buildFolderPath(buildingId, request.getParentFolderId(), cleanName);
+        String folderPath = buildFolderPath(apartment.getIdApartment(), request.getParentFolderId(), cleanName);
 
         try {
             Path physicalPath = Paths.get(baseDocumentsDir, folderPath);
@@ -109,7 +116,8 @@ public class DocumentService {
                 .build();
 
         folder = folderRepository.save(folder);
-        log.info("Dossier créé en base de données: {} (ID: {}) pour immeuble: {}", folder.getName(), folder.getId(), buildingId);
+        log.info("Dossier créé en base de données: {} (ID: {}) pour appartement: {} (immeuble: {})",
+                folder.getName(), folder.getId(), apartment.getIdApartment(), buildingId);
 
         return mapToFolderDto(folder);
     }
@@ -124,31 +132,12 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Building building = buildingRepository.findById(buildingId)
-                .orElseThrow(() -> new RuntimeException("Immeuble non trouvé"));
-
-        ensureBuildingRootFolderExists(building);
-
         List<Folder> folders = folderRepository.findByBuildingIdAndParentFolderIsNull(buildingId);
         log.debug("Récupération de {} dossiers racine pour l'immeuble {}", folders.size(), buildingId);
 
         return folders.stream()
                 .map(this::mapToFolderDto)
                 .collect(Collectors.toList());
-    }
-
-    private void ensureBuildingRootFolderExists(Building building) {
-        try {
-            String buildingFolderPath = "building_" + building.getBuildingId();
-            Path physicalPath = Paths.get(baseDocumentsDir, buildingFolderPath);
-
-            if (!Files.exists(physicalPath)) {
-                Files.createDirectories(physicalPath);
-                log.info("Dossier racine créé pour l'immeuble {}: {}", building.getBuildingId(), physicalPath.toAbsolutePath());
-            }
-        } catch (IOException e) {
-            log.error("Erreur lors de la création du dossier racine de l'immeuble {}", building.getBuildingId(), e);
-        }
     }
 
     @Transactional(readOnly = true)
@@ -211,6 +200,13 @@ public class DocumentService {
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
 
         Apartment apartment = resident.getApartment();
+        if (apartment == null) {
+            throw new RuntimeException("Aucun appartement associé au résident");
+        }
+
+        if (!apartment.getBuilding().getBuildingId().equals(buildingId)) {
+            throw new RuntimeException("Votre appartement n'appartient pas à l'immeuble sélectionné");
+        }
 
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Le fichier est vide");
@@ -253,8 +249,8 @@ public class DocumentService {
                     .build();
 
             document = documentRepository.save(document);
-            log.info("Document uploadé: {} (ID: {}) dans le dossier: {} pour immeuble: {}",
-                    originalFilename, document.getId(), folder.getName(), buildingId);
+            log.info("Document uploadé: {} (ID: {}) dans le dossier: {} pour appartement: {} (immeuble: {})",
+                    originalFilename, document.getId(), folder.getName(), apartment.getIdApartment(), buildingId);
 
             return mapToDocumentDto(document);
 
@@ -368,13 +364,13 @@ public class DocumentService {
                 .collect(Collectors.toList());
     }
 
-    private String buildFolderPath(String buildingId, Long parentFolderId, String folderName) {
+    private String buildFolderPath(String apartmentId, Long parentFolderId, String folderName) {
         if (parentFolderId != null) {
             Folder parentFolder = folderRepository.findById(parentFolderId)
                     .orElseThrow(() -> new RuntimeException("Parent folder not found"));
             return Paths.get(parentFolder.getFolderPath(), folderName).toString();
         }
-        return Paths.get("building_" + buildingId, folderName).toString();
+        return Paths.get("apartment_" + apartmentId, folderName).toString();
     }
 
     private void deleteDirectoryRecursively(Path path) throws IOException {
