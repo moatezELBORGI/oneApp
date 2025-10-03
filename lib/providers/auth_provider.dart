@@ -14,14 +14,14 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String? _currentUserId;
-  List<BuildingSelectionModel> _availableBuildings = [];
+  List<BuildingSelection> _availableBuildings = [];
 
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _user != null;
   String? get currentUserId => _currentUserId;
-  List<BuildingSelectionModel> get availableBuildings => _availableBuildings;
+  List<BuildingSelection> get availableBuildings => _availableBuildings;
 
   AuthProvider() {
     _loadUserFromStorage();
@@ -204,7 +204,7 @@ class AuthProvider with ChangeNotifier {
     try {
       final buildings = await _apiService.getUserBuildings();
       _availableBuildings = buildings
-          .map((json) => BuildingSelectionModel.fromJson(json))
+          .map((json) => BuildingSelection.fromJson(json))
           .toList();
       notifyListeners();
     } catch (e) {

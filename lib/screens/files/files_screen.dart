@@ -675,40 +675,53 @@ class _FilesScreenState extends State<FilesScreen> {
 
   void _showCreateFolderDialog() {
     final nameController = TextEditingController();
+    String? errorText;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nouveau dossier'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(
-            labelText: 'Nom du dossier',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.folder),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Nouveau dossier'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Nom du dossier',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.folder),
+                  errorText: errorText,
+                ),
+                autofocus: true,
+              ),
+            ],
           ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.trim().isNotEmpty) {
-                context
-                    .read<DocumentProvider>()
-                    .createFolder(nameController.text.trim());
-                Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler'),
             ),
-            child: const Text('Créer'),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.trim().isEmpty) {
+                  setState(() {
+                    errorText = 'Le nom du dossier est obligatoire';
+                  });
+                } else {
+                  context
+                      .read<DocumentProvider>()
+                      .createFolder(nameController.text.trim());
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+              ),
+              child: const Text('Créer'),
+            ),
+          ],
+        ),
       ),
     );
   }

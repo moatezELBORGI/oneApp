@@ -274,29 +274,7 @@ public class DataInitializationService implements CommandLineRunner {
             residentBuildingRepository.save(residentBuilding1Resident);
 
             // ==================== RÉSUMÉ ====================
-            log.info("\n" +
-                    "========================================\n" +
-                    "Test data created successfully!\n" +
-                    "========================================\n" +
-                    "BUILDINGS:\n" +
-                    "  1. {} (ID: {}) - 6 apartments\n" +
-                    "  2. {} (ID: {}) - 6 apartments\n" +
-                    "\n" +
-                    "RESIDENTS:\n" +
-                    "  1. {} ({})\n" +
-                    "     - ADMIN in Building 1 (Apartment 301)\n" +
-                    "     - ADMIN in Building 2 (Apartment 302)\n" +
-                    "\n" +
-                    "  2. {} ({})\n" +
-                    "     - RESIDENT in Building 1 (Apartment 101)\n" +
-                    "\n" +
-                    "PASSWORD: password123\n" +
-                    "========================================",
-                    building1.getBuildingLabel(), building1.getBuildingId(),
-                    building2.getBuildingLabel(), building2.getBuildingId(),
-                    admin.getEmail(), admin.getFname() + " " + admin.getLname(),
-                    resident.getEmail(), resident.getFname() + " " + resident.getLname()
-            );
+
         }
     }
 }

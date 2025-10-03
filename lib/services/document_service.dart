@@ -216,11 +216,11 @@ class DocumentService {
       return 'doc';
     }
     if (mimeType?.contains('excel') ?? false ||
-        mimeType?.contains('spreadsheet') ?? false) {
+        mimeType!.contains('spreadsheet') ?? false) {
       return 'excel';
     }
     if (mimeType?.contains('powerpoint') ?? false ||
-        mimeType?.contains('presentation') ?? false) {
+        mimeType!.contains('presentation') ?? false) {
       return 'ppt';
     }
     if (mimeType?.startsWith('video/') ?? false) {
@@ -230,8 +230,8 @@ class DocumentService {
       return 'audio';
     }
     if (mimeType?.contains('zip') ?? false ||
-        mimeType?.contains('rar') ?? false ||
-        mimeType?.contains('compressed') ?? false) {
+        mimeType!.contains('rar') ?? false ||
+        mimeType!.contains('compressed') ?? false) {
       return 'archive';
     }
 

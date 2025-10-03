@@ -88,6 +88,6 @@ class DocumentModel {
   bool get isImage => mimeType?.startsWith('image/') ?? false;
   bool get isPdf => mimeType == 'application/pdf';
   bool get isDocument => mimeType?.contains('document') ?? false ||
-                         mimeType?.contains('word') ?? false ||
-                         mimeType?.contains('text') ?? false;
+                         mimeType!.contains('word') ?? false ||
+                         mimeType!.contains('text') ?? false;
 }
