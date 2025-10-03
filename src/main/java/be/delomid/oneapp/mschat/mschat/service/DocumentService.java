@@ -8,11 +8,13 @@ import be.delomid.oneapp.mschat.mschat.model.Building;
 import be.delomid.oneapp.mschat.mschat.model.Document;
 import be.delomid.oneapp.mschat.mschat.model.Folder;
 import be.delomid.oneapp.mschat.mschat.model.Resident;
+import be.delomid.oneapp.mschat.mschat.model.ResidentBuilding;
 import be.delomid.oneapp.mschat.mschat.repository.ApartmentRepository;
 import be.delomid.oneapp.mschat.mschat.repository.BuildingRepository;
 import be.delomid.oneapp.mschat.mschat.repository.DocumentRepository;
 import be.delomid.oneapp.mschat.mschat.repository.FolderRepository;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
+import be.delomid.oneapp.mschat.mschat.repository.ResidentBuildingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +41,7 @@ public class DocumentService {
     private final ApartmentRepository apartmentRepository;
     private final ResidentRepository residentRepository;
     private final BuildingRepository buildingRepository;
+    private final ResidentBuildingRepository residentBuildingRepository;
 
     @Value("${app.documents.base-dir:documents}")
     private String baseDocumentsDir;
@@ -59,13 +62,13 @@ public class DocumentService {
         Building building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new RuntimeException("Immeuble non trouvé"));
 
-        Apartment apartment = resident.getApartment();
-        if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
-        }
+        ResidentBuilding residentBuilding = residentBuildingRepository
+                .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
+                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
 
-        if (!apartment.getBuilding().getBuildingId().equals(buildingId)) {
-            throw new RuntimeException("Votre appartement n'appartient pas à l'immeuble sélectionné");
+        Apartment apartment = residentBuilding.getApartment();
+        if (apartment == null) {
+            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
         }
 
         String cleanName = request.getName().trim();
@@ -141,9 +144,13 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Apartment apartment = resident.getApartment();
+        ResidentBuilding residentBuilding = residentBuildingRepository
+                .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
+                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
+
+        Apartment apartment = residentBuilding.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
         }
 
         List<Folder> folders = folderRepository.findRootFoldersByBuildingAndApartment(buildingId, apartment.getIdApartment());
@@ -164,9 +171,13 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Apartment apartment = resident.getApartment();
+        ResidentBuilding residentBuilding = residentBuildingRepository
+                .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
+                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
+
+        Apartment apartment = residentBuilding.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
         }
 
         Folder folder = folderRepository.findByIdAndBuildingAndApartment(folderId, buildingId, apartment.getIdApartment())
@@ -192,9 +203,13 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Apartment apartment = resident.getApartment();
+        ResidentBuilding residentBuilding = residentBuildingRepository
+                .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
+                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
+
+        Apartment apartment = residentBuilding.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
         }
 
         Folder folder = folderRepository.findByIdAndBuildingAndApartment(folderId, buildingId, apartment.getIdApartment())
@@ -222,17 +237,17 @@ public class DocumentService {
         Building building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new RuntimeException("Immeuble non trouvé"));
 
-        Apartment apartment = resident.getApartment();
+        ResidentBuilding residentBuilding = residentBuildingRepository
+                .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
+                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
+
+        Apartment apartment = residentBuilding.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
         }
 
         Folder folder = folderRepository.findByIdAndBuildingAndApartment(folderId, buildingId, apartment.getIdApartment())
                 .orElseThrow(() -> new RuntimeException("Dossier non trouvé ou accès non autorisé"));
-
-        if (!apartment.getBuilding().getBuildingId().equals(buildingId)) {
-            throw new RuntimeException("Votre appartement n'appartient pas à l'immeuble sélectionné");
-        }
 
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Le fichier est vide");
@@ -296,9 +311,13 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Apartment apartment = resident.getApartment();
+        ResidentBuilding residentBuilding = residentBuildingRepository
+                .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
+                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
+
+        Apartment apartment = residentBuilding.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
         }
 
         Folder folder = folderRepository.findByIdAndBuildingAndApartment(folderId, buildingId, apartment.getIdApartment())
@@ -333,9 +352,13 @@ public class DocumentService {
         Document document = documentRepository.findByIdAndBuildingId(documentId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Document non trouvé ou accès non autorisé"));
 
-        Apartment apartment = resident.getApartment();
+        ResidentBuilding residentBuilding = residentBuildingRepository
+                .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
+                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
+
+        Apartment apartment = residentBuilding.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
         }
 
         if (!document.getFolder().getIsShared() &&
@@ -371,9 +394,13 @@ public class DocumentService {
         Document document = documentRepository.findByIdAndBuildingId(documentId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Document non trouvé ou accès non autorisé"));
 
-        Apartment apartment = resident.getApartment();
+        ResidentBuilding residentBuilding = residentBuildingRepository
+                .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
+                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
+
+        Apartment apartment = residentBuilding.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
         }
 
         if (!document.getFolder().getIsShared() &&
@@ -402,9 +429,13 @@ public class DocumentService {
             throw new RuntimeException("Aucun immeuble sélectionné");
         }
 
-        Apartment apartment = resident.getApartment();
+        ResidentBuilding residentBuilding = residentBuildingRepository
+                .findByResidentIdAndBuildingId(resident.getIdUsers(), buildingId)
+                .orElseThrow(() -> new RuntimeException("Vous n'avez pas d'appartement dans cet immeuble"));
+
+        Apartment apartment = residentBuilding.getApartment();
         if (apartment == null) {
-            throw new RuntimeException("Aucun appartement associé au résident");
+            throw new RuntimeException("Aucun appartement associé dans cet immeuble");
         }
 
         if (query == null || query.trim().isEmpty()) {
